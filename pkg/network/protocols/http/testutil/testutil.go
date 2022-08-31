@@ -20,17 +20,20 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	sysctl "github.com/lorenzosaino/go-sysctl"
 )
 
 // Options wraps all configurable params for the HTTPServer
 type Options struct {
 	// If TLS is enabled, allows to upgrade the connections to http/2.
-	EnableHTTP2     bool
-	EnableTLS       bool
-	EnableKeepAlive bool
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	SlowResponse    time.Duration
+	EnableHTTP2        bool
+	EnableTLS          bool
+	EnableKeepAlive    bool
+	EnableTCPTimestamp bool
+	ReadTimeout        time.Duration
+	WriteTimeout       time.Duration
+	SlowResponse       time.Duration
 }
 
 // HTTPServer spins up a HTTP test server that returns the status code included in the URL
@@ -49,6 +52,20 @@ func HTTPServer(t *testing.T, addr string, options Options) func() {
 
 		defer req.Body.Close()
 		io.Copy(w, req.Body)
+	}
+
+	/* Save and recover TCP timestamp option */
+	oldTCPTS, err := sysctl.Get("net.ipv4.tcp_timestamps")
+	if err != nil {
+		t.Fatal("can't get TCP timestamp", err)
+	}
+	tcpTimestampStr := "0"
+	if options.EnableTCPTimestamp {
+		tcpTimestampStr = "1"
+	}
+	err = sysctl.Set("net.ipv4.tcp_timestamps", tcpTimestampStr)
+	if err != nil {
+		t.Fatal("can't set TCP timestamp", err)
 	}
 
 	srv := &http.Server{
@@ -91,11 +108,17 @@ func HTTPServer(t *testing.T, addr string, options Options) func() {
 			return err
 		}
 	}
-	err := listenFn()
+	err = listenFn()
 	if err != nil {
 		t.Fatalf("server listen: %s", err)
 	}
-	return func() { srv.Shutdown(context.Background()) }
+	return func() {
+		srv.Shutdown(context.Background())
+		err := sysctl.Set("net.ipv4.tcp_timestamps", oldTCPTS)
+		if err != nil {
+			t.Fatal("can't set old value of TCP timestamp", err)
+		}
+	}
 }
 
 var pathParser1 = regexp.MustCompile(`/(\d{3})/.+`)
