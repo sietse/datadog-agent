@@ -107,6 +107,13 @@
           "type": "string",
           "format": "date-time",
           "description": "Creation time of the container"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Container tags"
         }
       },
       "additionalProperties": false,

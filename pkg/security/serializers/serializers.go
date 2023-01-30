@@ -225,6 +225,8 @@ type ContainerContextSerializer struct {
 	ID string `json:"id,omitempty"`
 	// Creation time of the container
 	CreatedAt *utils.EasyjsonTime `json:"created_at,omitempty"`
+	// Container tags
+	Tags []string `json:"tags,omitempty"`
 }
 
 // FileEventSerializer serializes a file event to JSON
@@ -708,6 +710,7 @@ func newProcessSerializer(ps *model.Process, e *model.Event, resolvers *resolver
 			}
 			if cgroup, _ := resolvers.CGroupResolver.GetWorkload(ps.ContainerID); cgroup != nil {
 				psSerializer.Container.CreatedAt = getTimeIfNotZero(time.Unix(0, int64(cgroup.CreationTime)))
+				psSerializer.Container.Tags = cgroup.Tags
 			}
 		}
 		return psSerializer
@@ -1095,6 +1098,7 @@ func NewEventSerializer(event *model.Event, resolvers *resolvers.Resolvers) *Eve
 		s.ContainerContextSerializer = &ContainerContextSerializer{
 			ID:        id,
 			CreatedAt: getTimeIfNotZero(creationTime),
+			Tags:      event.ContainerContext.Tags,
 		}
 	}
 

@@ -123,6 +123,13 @@ CWS logs have the following JSON schema:
                     "type": "string",
                     "format": "date-time",
                     "description": "Creation time of the container"
+                },
+                "tags": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "Container tags"
                 }
             },
             "additionalProperties": false,
@@ -1475,6 +1482,13 @@ CWS logs have the following JSON schema:
             "type": "string",
             "format": "date-time",
             "description": "Creation time of the container"
+        },
+        "tags": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array",
+            "description": "Container tags"
         }
     },
     "additionalProperties": false,
@@ -1488,6 +1502,7 @@ CWS logs have the following JSON schema:
 | ----- | ----------- |
 | `id` | Container ID |
 | `created_at` | Creation time of the container |
+| `tags` | Container tags |
 
 
 ## `DDContext`
