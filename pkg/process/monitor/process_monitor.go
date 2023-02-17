@@ -41,7 +41,7 @@ var (
 //
 // Multiple team can use the same ProcessMonitor,
 // the callers need to guarantee calling each Initialize() Stop() one single time
-// this maintain an internal reference counter
+// this maintains an internal reference counter
 //
 // ProcessMonitor require root or CAP_NET_ADMIN capabilities
 type ProcessMonitor struct {
@@ -136,9 +136,9 @@ func (pm *ProcessMonitor) enqueueCallback(callback *ProcessCallback, pid uint32,
 }
 
 // evalEXECCallback is a best effort and would not return errors, but report them
-func (p *ProcessMonitor) evalEXECCallback(c *ProcessCallback, pid uint32) {
+func (pm *ProcessMonitor) evalEXECCallback(c *ProcessCallback, pid uint32) {
 	if c.Metadata == ANY {
-		p.enqueueCallback(c, pid, nil)
+		pm.enqueueCallback(c, pid, nil)
 		return
 	}
 
@@ -168,18 +168,19 @@ func (p *ProcessMonitor) evalEXECCallback(c *ProcessCallback, pid uint32) {
 			log.Debugf("process %d name parsing failed %s", pid, err)
 			return
 		}
+		log.Infof("a new process was created %d %q", pid, pname)
 		if c.Regex.MatchString(pname) {
-			p.enqueueCallback(c, pid, metadataName{Name: pname})
+			pm.enqueueCallback(c, pid, metadataName{Name: pname})
 		}
 	}
 }
 
 // evalEXITCallback will evaluate the metadata saved by the Exec callback and the callback accordingly
 // please refer to GetProcessMonitor documentation
-func (p *ProcessMonitor) evalEXITCallback(c *ProcessCallback, pid uint32) {
+func (pm *ProcessMonitor) evalEXITCallback(c *ProcessCallback, pid uint32) {
 	switch c.Metadata {
 	case NAME:
-		metadata, found := p.runningPids[pid]
+		metadata, found := pm.runningPids[pid]
 		if !found {
 			// we can hit here if a process started before the Exec callback has been registred
 			// and the process Exit, so we don't find his metadata
@@ -187,10 +188,10 @@ func (p *ProcessMonitor) evalEXITCallback(c *ProcessCallback, pid uint32) {
 		}
 		pname := metadata.(metadataName).Name
 		if c.Regex.MatchString(pname) {
-			p.enqueueCallback(c, pid, metadata)
+			pm.enqueueCallback(c, pid, metadata)
 		}
 	case ANY:
-		p.enqueueCallback(c, pid, nil)
+		pm.enqueueCallback(c, pid, nil)
 	}
 }
 
@@ -294,7 +295,7 @@ func (pm *ProcessMonitor) Initialize() error {
 //
 // By design : 1/ a callback object can be registered only once
 //
-//	2/ Exec callback with a Metadata (!=ANY) must be registred before the sibling Exit metadata,
+//	2/ Exec callback with a Metadata (!=ANY) must be registered before the sibling Exit metadata,
 //	   otherwise the Subscribe() will return an error as no metadata will be saved between Exec and Exit,
 //	   please refer to GetProcessMonitor()
 func (pm *ProcessMonitor) Subscribe(callback *ProcessCallback) (UnSubscribe func(), err error) {
@@ -303,7 +304,7 @@ func (pm *ProcessMonitor) Subscribe(callback *ProcessCallback) (UnSubscribe func
 
 	for _, c := range pm.procEventCallbacks[callback.Event] {
 		if c == callback {
-			return nil, errors.New("same callback can't be registred twice")
+			return nil, errors.New("same callback can't be registered twice")
 		}
 	}
 

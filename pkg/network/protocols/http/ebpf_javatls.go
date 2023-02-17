@@ -60,7 +60,7 @@ func newJavaTLSProgram(c *config.Config) *JavaTLSProgram {
 		return nil
 	}
 
-	log.Info("java tls is enabled ")
+	log.Info("java tls is enabled")
 	javaUSMAgentArgs = c.JavaAgentArgs
 	javaUSMAgentJarPath = filepath.Join(c.JavaDir, agentUSMJar)
 	jar, err := os.Open(javaUSMAgentJarPath)
@@ -109,6 +109,7 @@ func (p *JavaTLSProgram) GetAllUndefinedProbes() []manager.ProbeIdentificationPa
 }
 
 func newJavaProcess(pid uint32) {
+	log.Infof("Found a new java process %d", pid)
 	args := javaUSMAgentArgs
 	if len(args) > 0 {
 		args += " "
@@ -129,6 +130,8 @@ func (p *JavaTLSProgram) Start() {
 	})
 	if err != nil {
 		log.Errorf("process monitor Subscribe() error: %s", err)
+	} else {
+		log.Infof("java tls registered callback")
 	}
 }
 
