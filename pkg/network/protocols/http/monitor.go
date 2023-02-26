@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/network/ebpf/probes"
+	"github.com/DataDog/datadog-agent/pkg/network/protocols/http2"
 	"syscall"
 	"unsafe"
 
@@ -201,7 +202,7 @@ func (m *Monitor) GetHTTPStats() map[Key]*RequestStats {
 
 // GetHTTP2Stats returns a map of HTTP2 stats stored in the following format:
 // [source, dest tuple, request path] -> RequestStats object
-func (m *Monitor) GetHTTP2Stats() map[Key]*RequestStats {
+func (m *Monitor) GetHTTP2Stats() map[http2.Key2]*RequestStats {
 	if m == nil || m.http2Enabled == false {
 		return nil
 	}
