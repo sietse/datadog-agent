@@ -284,6 +284,8 @@ func (p *GoTLSProgram) handleProcessStart(pid pid) {
 		return
 	}
 
+	// Getting the full path in the process' namespace.
+	binPath = filepath.Join(p.procRoot, strconv.FormatUint(uint64(pid), 10), "root", binPath)
 	var stat syscall.Stat_t
 	if err = syscall.Stat(binPath, &stat); err != nil {
 		log.Debugf("could not stat binary path %s: %s", binPath, err)
