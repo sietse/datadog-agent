@@ -7,18 +7,19 @@
 #include "tracer-maps.h"
 #include "sock.h"
 
-int __always_inline handle_tcp_recv(u64 pid_tgid, struct sock *skp, int recv) {
+static int __always_inline handle_tcp_recv(u64 pid_tgid, struct sock *skp, int recv) {
     conn_tuple_t t = {};
     if (!read_conn_tuple(&t, skp, pid_tgid, CONN_TYPE_TCP)) {
+        log_debug("kretprobe/handle_tcp_recv: bye 1\n");
         return 0;
     }
+    log_debug("kretprobe/handle_tcp_recv: bye 2; %d %d\n", t.sport, t.dport);
 
     handle_tcp_stats(&t, skp, 0);
 
     __u32 packets_in = 0;
     __u32 packets_out = 0;
     get_tcp_segment_counts(skp, &packets_in, &packets_out);
-
     return handle_message(&t, 0, recv, CONN_DIRECTION_UNKNOWN, packets_out, packets_in, PACKET_COUNT_ABSOLUTE, skp);
 }
 
@@ -27,6 +28,8 @@ int __always_inline handle_tcp_recv(u64 pid_tgid, struct sock *skp, int recv) {
 SEC("kprobe/tcp_recvmsg")
 int kprobe__tcp_recvmsg(struct pt_regs *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
+    log_debug("kprobe/tcp_recvmsg: pid_tgid: %d\n", pid_tgid);
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 1, 0)
     void *parm = (void*)PT_REGS_PARM2(ctx);
     int flags = (int)PT_REGS_PARM6(ctx);
@@ -46,28 +49,34 @@ int kprobe__tcp_recvmsg(struct pt_regs *ctx) {
 SEC("kretprobe/tcp_recvmsg")
 int kretprobe__tcp_recvmsg(struct pt_regs *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
+    log_debug("kretprobe/tcp_recvmsg: pid_tgid: %d\n", pid_tgid);
     struct sock **skpp = (struct sock**) bpf_map_lookup_elem(&tcp_recvmsg_args, &pid_tgid);
     if (!skpp) {
+        log_debug("kretprobe/tcp_recvmsg: bye 1\n");
         return 0;
     }
 
     struct sock *skp = *skpp;
     bpf_map_delete_elem(&tcp_recvmsg_args, &pid_tgid);
     if (!skp) {
+        log_debug("kretprobe/tcp_recvmsg: bye 2\n");
         return 0;
     }
 
     int recv = PT_REGS_RC(ctx);
     if (recv < 0) {
+        log_debug("kretprobe/tcp_recvmsg: bye 3\n");
         return 0;
     }
 
+    log_debug("kretprobe/tcp_recvmsg: bye 4\n");
     return handle_tcp_recv(pid_tgid, skp, recv);
 }
 
 SEC("kprobe/tcp_read_sock")
 int kprobe__tcp_read_sock(struct pt_regs *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
+    log_debug("kprobe/tcp_read_sock: pid_tgid: %d\n", pid_tgid);
     void *parm1 = (void*)PT_REGS_PARM1(ctx);
     struct sock* skp = parm1;
     // we reuse tcp_recvmsg_args here since there is no overlap
@@ -79,6 +88,7 @@ int kprobe__tcp_read_sock(struct pt_regs *ctx) {
 SEC("kretprobe/tcp_read_sock")
 int kretprobe__tcp_read_sock(struct pt_regs *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
+    log_debug("kretprobe/tcp_read_sock: pid_tgid: %d\n", pid_tgid);
     // we reuse tcp_recvmsg_args here since there is no overlap
     // between the tcp_recvmsg and tcp_read_sock paths
     struct sock **skpp = (struct sock**) bpf_map_lookup_elem(&tcp_recvmsg_args, &pid_tgid);

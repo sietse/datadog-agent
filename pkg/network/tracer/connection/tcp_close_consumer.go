@@ -18,7 +18,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/network"
 	netebpf "github.com/DataDog/datadog-agent/pkg/network/ebpf"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
-	manager "github.com/DataDog/ebpf-manager"
 )
 
 const (
@@ -38,7 +37,7 @@ type tcpCloseConsumer struct {
 	perfLost     *atomic.Int64
 }
 
-func newTCPCloseConsumer(m *manager.Manager, perfHandler *ddebpf.PerfHandler, batchManager *perfBatchManager) (*tcpCloseConsumer, error) {
+func newTCPCloseConsumer(perfHandler *ddebpf.PerfHandler, batchManager *perfBatchManager) (*tcpCloseConsumer, error) {
 	c := &tcpCloseConsumer{
 		perfHandler:  perfHandler,
 		batchManager: batchManager,

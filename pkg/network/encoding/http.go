@@ -6,6 +6,7 @@
 package encoding
 
 import (
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/gogo/protobuf/proto"
 
 	model "github.com/DataDog/agent-payload/v5/process"
@@ -51,7 +52,7 @@ func (a *aggregationWrapper) ValueFor(c network.ConnectionStats) *model.HTTPAggr
 	}
 
 	if c.SPort == a.dport && c.DPort == a.sport {
-		// We have have a collision with another `ConnectionStats`, but this is a
+		// We have a collision with another `ConnectionStats`, but this is a
 		// legit scenario where we're dealing with the opposite ends of the
 		// same connection, which means both server and client are in the same host.
 		// In this particular case it is correct to have both connections
@@ -61,8 +62,8 @@ func (a *aggregationWrapper) ValueFor(c network.ConnectionStats) *model.HTTPAggr
 
 	// Return nil otherwise. This is to prevent multiple `ConnectionStats` with
 	// exactly the same source and destination addresses but different PIDs to
-	// "bind" to the same HTTPAggregations object, which would result in a
-	// overcount problem. (Note that this is due to the fact that
+	// "bind" to the same HTTPAggregations object, which would result in an
+	// over count problem. (Note that this is due to the fact that
 	// `http.KeyTuple` doesn't have a PID field.) This happens mostly in the
 	// context of pre-fork web servers, where multiple worker processes share the
 	// same socket
@@ -84,6 +85,7 @@ func newHTTPEncoder(payload *network.Connections) *httpEncoder {
 	// this allows us to skip encoding orphan HTTP objects that can't be matched to a connection
 	for _, conn := range payload.Conns {
 		for _, key := range network.HTTPKeyTuplesFromConn(conn) {
+			log.Infof("http key tuple from conn %#v", key)
 			encoder.aggregations[key] = nil
 		}
 	}
@@ -103,6 +105,7 @@ func (e *httpEncoder) GetHTTPAggregationsAndTags(c network.ConnectionStats) (*mo
 			return e.aggregations[key].ValueFor(c), e.staticTags[key], e.dynamicTagsSet[key]
 		}
 	}
+
 	return nil, 0, nil
 }
 
@@ -115,6 +118,7 @@ func (e *httpEncoder) buildAggregations(payload *network.Connections) {
 	for key, stats := range payload.HTTP {
 		aggregation, ok := e.aggregations[key.KeyTuple]
 		if !ok {
+			log.Infof("found orphan http %#v", key.KeyTuple)
 			// if there is no matching connection don't even bother to serialize HTTP data
 			e.orphanEntries++
 			continue

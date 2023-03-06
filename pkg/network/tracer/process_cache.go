@@ -55,7 +55,7 @@ type processCache struct {
 	// cache of pid -> list of processes holds a list of processes
 	// with the same pid but differing start times up to a max of
 	// maxProcessListSize. this is used to determine the closest
-	// match to a connection's tiimestamp
+	// match to a connection's timestamp
 	cacheByPid map[uint32]processList
 	// lru cache; keyed by (pid, start time)
 	cache *lru.Cache

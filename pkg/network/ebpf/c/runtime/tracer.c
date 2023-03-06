@@ -140,6 +140,9 @@ int kprobe__tcp_close(struct pt_regs *ctx) {
 
 SEC("kretprobe/tcp_close")
 int kretprobe__tcp_close(struct pt_regs *ctx) {
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    if (pid_tgid) {}
+    log_debug("kretprobe/tcp_close: tgid: %u, pid: %u\n", pid_tgid >> 32, pid_tgid & 0xFFFFFFFF);
     flush_conn_close_if_full(ctx);
     return 0;
 }

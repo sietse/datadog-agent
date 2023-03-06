@@ -88,6 +88,7 @@ static __always_inline conn_tuple_t* tup_from_ssl_ctx(void *ssl_ctx, u64 pid_tgi
     }
 
     if (ssl_sock->tup.sport != 0 && ssl_sock->tup.dport != 0) {
+        log_debug("guy1 %d %d", ssl_sock->tup.sport, ssl_sock->tup.dport);
         return &ssl_sock->tup;
     }
 
@@ -122,6 +123,7 @@ static __always_inline conn_tuple_t* tup_from_ssl_ctx(void *ssl_ctx, u64 pid_tgi
         flip_tuple(&ssl_sock->tup);
     }
 
+    log_debug("guy2 %d %d", ssl_sock->tup.sport, ssl_sock->tup.dport);
     return &ssl_sock->tup;
 }
 

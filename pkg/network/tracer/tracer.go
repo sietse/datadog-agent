@@ -441,10 +441,25 @@ func (t *Tracer) GetActiveConnections(clientID string) (*network.Connections, er
 		return nil, fmt.Errorf("error retrieving connections: %s", err)
 	}
 	active := t.activeBuffer.Connections()
-
+	for _, aa := range active {
+		if aa.SPort == 1443 || aa.DPort == 1443 || aa.SPort == 8443 || aa.DPort == 8443 {
+			log.Infof("hola %#v", aa)
+		}
+	}
 	delta := t.state.GetDelta(clientID, latestTime, active, t.reverseDNS.GetDNSStats(), t.httpMonitor.GetHTTPStats(), t.httpMonitor.GetHTTP2Stats(), t.httpMonitor.GetKafkaStats())
+	for _, aa := range delta.Conns {
+		if aa.SPort == 1443 || aa.DPort == 1443 || aa.SPort == 8443 || aa.DPort == 8443 {
+			log.Infof("bola1 %#v", aa)
+		}
+	}
+	log.Infof("len before %d", len(delta.Conns))
 	t.activeBuffer.Reset()
-
+	log.Infof("len after %d", len(delta.Conns))
+	for _, aa := range delta.Conns {
+		if aa.SPort == 1443 || aa.DPort == 1443 || aa.SPort == 8443 || aa.DPort == 8443 {
+			log.Infof("bola %#v", aa)
+		}
+	}
 	ips := make([]util.Address, 0, len(delta.Conns)*2)
 	for _, conn := range delta.Conns {
 		ips = append(ips, conn.Source, conn.Dest)

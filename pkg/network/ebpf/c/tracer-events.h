@@ -68,6 +68,7 @@ static __always_inline void cleanup_conn(conn_tuple_t *tup, struct sock *sk) {
 
     if (cst) {
         conn.conn_stats = *cst;
+        log_debug("deleting %d %d", conn.tup.sport, conn.tup.dport);
         bpf_map_delete_elem(&conn_stats, &(conn.tup));
     } else {
         // we don't have any stats for the connection,

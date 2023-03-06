@@ -223,7 +223,11 @@ func (ns *networkState) GetDelta(
 	// Update the latest known time
 	ns.latestTimeEpoch = latestTime
 	connsByKey := ns.getConnsByCookie(active)
-
+	for a, aa := range connsByKey {
+		if aa.SPort == 1443 || aa.DPort == 1443 || aa.SPort == 8443 || aa.DPort == 8443 {
+			log.Infof("cola %d; %d %d", a, aa.SPort, aa.DPort)
+		}
+	}
 	clientBuffer := clientPool.Get(id)
 	client := ns.getClient(id)
 	defer client.Reset(connsByKey)
@@ -232,7 +236,18 @@ func (ns *networkState) GetDelta(
 	ns.mergeConnections(id, connsByKey, clientBuffer)
 
 	conns := clientBuffer.Connections()
+
+	for a, aa := range conns {
+		if aa.SPort == 1443 || aa.DPort == 1443 || aa.SPort == 8443 || aa.DPort == 8443 {
+			log.Infof("dola %d; %d %d", a, aa.SPort, aa.DPort)
+		}
+	}
 	ns.determineConnectionIntraHost(conns)
+	for a, aa := range conns {
+		if aa.SPort == 1443 || aa.DPort == 1443 || aa.SPort == 8443 || aa.DPort == 8443 {
+			log.Infof("yola %d; %d %d", a, aa.SPort, aa.DPort)
+		}
+	}
 	if len(dnsStats) > 0 {
 		ns.storeDNSStats(dnsStats)
 	}

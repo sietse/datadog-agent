@@ -32,7 +32,7 @@ var requiredKernelFuncs = []string{
 	"bpf_perf_event_read",
 }
 
-// IsTracerSupportedByOS returns whether or not the current kernel version supports tracer functionality
+// IsTracerSupportedByOS returns whether the current kernel version supports tracer functionality
 // along with some context on why it's not supported
 func IsTracerSupportedByOS(exclusionList []string) (bool, string) {
 	currentKernelCode, err := kernel.HostVersion()

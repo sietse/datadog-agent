@@ -61,6 +61,38 @@ func doDNSQuery(t *testing.T, domain string, serverIP string) (*net.UDPAddr, *ne
 	return dnsClientAddr, dnsServerAddr
 }
 
+func TestBuf(t *testing.T) {
+	config := testConfig()
+	config.BPFDebug = true
+	tr := setupTracer(t, config)
+	// Create a dummy TCP Server
+	server := NewTCPServer(func(c net.Conn) {
+		c.Close()
+	})
+	t.Cleanup(server.Shutdown)
+	require.NoError(t, server.Run())
+
+	payload := genPayload(clientMessageSize)
+	// Connect to server
+	c, err := net.DialTimeout("tcp", server.address, 2*time.Second)
+	require.NoError(t, err)
+
+	// Write a message
+	_, err = c.Write(payload)
+	require.NoError(t, err)
+
+	c.Close()
+
+	time.Sleep(5 * time.Second)
+	_, ok := findConnection(c.RemoteAddr(), c.LocalAddr(), getConnections(t, tr))
+	require.True(t, ok)
+	//assert.Equal(t, clientMessageSize, int(conn.Monotonic.SentBytes))
+	//assert.Equal(t, 0, int(conn.Monotonic.RecvBytes))
+	//assert.Equal(t, 0, int(conn.Monotonic.Retransmits))
+	//assert.Equal(t, os.Getpid(), int(conn.Pid))
+	//assert.Equal(t, addrPort(server.address), int(conn.DPort))
+}
+
 func TestTCPRemoveEntries(t *testing.T) {
 	config := testConfig()
 	config.TCPConnTimeout = 100 * time.Millisecond

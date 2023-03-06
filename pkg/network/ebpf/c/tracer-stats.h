@@ -89,9 +89,11 @@ static __always_inline void update_conn_stats(conn_tuple_t *t, size_t sent_bytes
     conn_stats_ts_t *val = NULL;
     val = get_conn_stats(t, sk);
     if (!val) {
+        log_debug("[update_conn_stats]: bye1\n");
         return;
     }
 
+    log_debug("[update_conn_stats]: bye2\n");
     if (val->protocol == PROTOCOL_UNKNOWN) {
         protocol_t protocol = get_protocol(t);
         if (protocol != PROTOCOL_UNKNOWN) {
