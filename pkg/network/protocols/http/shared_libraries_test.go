@@ -289,7 +289,8 @@ func initEBPFProgram(t *testing.T) (*ddebpf.PerfHandler, func()) {
 
 	exclude := []string{
 		"socket__http_filter",
-		"socket__http2_filter",
+		"socket__http2_process_frame",
+		"socket__http2_filter_frames",
 		"socket__kafka_filter",
 		"socket__protocol_dispatcher",
 		"socket__protocol_dispatcher_kafka",

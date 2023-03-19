@@ -7,7 +7,8 @@
 
 // Maximum number of frames to be processed in a single TCP packet. That's also the number of tail calls we'll have.
 // NOTE: we may need to revisit this const if we need to capture more connections.
-#define HTTP2_MAX_FRAMES_ITERATIONS 10
+#define HTTP2_MAX_FRAMES_ITERATIONS_TO_FILTER 15
+#define HTTP2_MAX_FRAMES_ITERATIONS 7
 
 // A limit of max headers which we process in the request/response.
 #define HTTP2_MAX_HEADERS_COUNT_FOR_FILTERING 20
@@ -111,7 +112,13 @@ typedef struct {
 
 typedef struct {
     __u32 offset;
-    __u8 iteration;
+    struct http2_frame frame;
+} http2_frame_for_reading_t;
+
+typedef struct {
+    http2_frame_for_reading_t frames[HTTP2_MAX_FRAMES_ITERATIONS];
+    __u8 iterations;
+    __u8 current_iteration;
 } http2_tail_call_state_t;
 
 typedef enum {
@@ -119,5 +126,12 @@ typedef enum {
     HEADER_NOT_INTERESTING,
     HEADER_INTERESTING,
 } parse_result_t;
+
+typedef enum {
+    HTTP2_PROCESS_FRAME = 0,
+    //  Add new progs before that line.
+    HTTP2_PROG_COUNT,
+    __HTTP2_PROG_MAX_UINT8 = 255,
+} __attribute__ ((packed)) http2_prog_t;
 
 #endif
