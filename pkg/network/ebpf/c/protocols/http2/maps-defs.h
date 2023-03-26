@@ -30,4 +30,7 @@ BPF_PERCPU_ARRAY_MAP(http2_stream_heap, __u32, http2_stream_t, 1)
 /* Allocating a ctx on the heap, in order to save the ctx between the current stream. */
 BPF_PERCPU_ARRAY_MAP(http2_ctx_heap, __u32, http2_ctx_t, 1)
 
+// Tail calls for HTTP/2 parsing.
+BPF_PROG_ARRAY(http2_progs, HTTP2_PROG_COUNT)
+
 #endif

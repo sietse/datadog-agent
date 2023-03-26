@@ -34,6 +34,7 @@ const (
 	// to classify protocols and dispatch the correct handlers.
 	protocolDispatcherSocketFilterFunction   = "socket__protocol_dispatcher"
 	protocolDispatcherProgramsMap            = "protocols_progs"
+	http2ProgramsMap                         = "http2_progs"
 	protocolDispatcherClassificationPrograms = "dispatcher_classification_progs"
 	dispatcherConnectionProtocolMap          = "dispatcher_connection_protocol"
 	connectionStatesMap                      = "connection_states"
@@ -95,7 +96,15 @@ var http2TailCall = manager.TailCallRoute{
 	ProgArrayName: protocolDispatcherProgramsMap,
 	Key:           uint32(ProtocolHTTP2),
 	ProbeIdentificationPair: manager.ProbeIdentificationPair{
-		EBPFFuncName: "socket__http2_filter",
+		EBPFFuncName: "socket__http2_filter_frames",
+	},
+}
+
+var http2ProcessFrameTailCall = manager.TailCallRoute{
+	ProgArrayName: http2ProgramsMap,
+	Key:           0, // TODO: change to a const
+	ProbeIdentificationPair: manager.ProbeIdentificationPair{
+		EBPFFuncName: "socket__http2_process_frame",
 	},
 }
 
@@ -169,7 +178,7 @@ func newEBPFProgram(c *config.Config, offsets []manager.ConstantEditor, sockFD *
 	}
 
 	if c.EnableHTTP2Monitoring {
-		tailCalls = append(tailCalls, http2TailCall)
+		tailCalls = append(tailCalls, http2TailCall, http2ProcessFrameTailCall)
 	}
 
 	// If Kafka monitoring is enabled, the kafka parsing function and the Kafka dispatching function are added to the dispatcher mechanism.
@@ -396,7 +405,7 @@ func (e *ebpfProgram) init(buf bytecode.AssetReader, options manager.Options) er
 	if e.cfg.EnableHTTP2Monitoring {
 		events.Configure("http2", e.Manager.Manager, &options)
 	} else {
-		options.ExcludedFunctions = append(options.ExcludedFunctions, "socket__http2_filter")
+		options.ExcludedFunctions = append(options.ExcludedFunctions, "socket__http2_filter_frames", "socket__http2_process_frame")
 	}
 
 	if e.cfg.EnableKafkaMonitoring {
