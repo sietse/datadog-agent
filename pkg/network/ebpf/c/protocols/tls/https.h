@@ -29,6 +29,12 @@
 
 #define HTTPS_PORT 443
 
+static __always_inline __u64 ssl_async_handshake_window() {
+    __u64 val = 0;
+    LOAD_CONSTANT("ssl_async_handshake_window", val);
+    return val;
+}
+
 /* this function is called by all TLS hookpoints (OpenSSL, GnuTLS and GoTLS) and */
 /* it's used for classify the subset of protocols that is supported by `classify_protocol_for_dispatcher` */
 static __always_inline void classify_decrypted_payload(conn_tuple_t *t, void *buffer, size_t len) {
@@ -152,7 +158,7 @@ static __always_inline void map_ssl_ctx_to_sock(struct sock *skp) {
         return;
     }
     if (args->timestamp > 0) {
-        if ((bpf_ktime_get_ns() - args->timestamp) > 500000) { // 500us
+        if ((bpf_ktime_get_ns() - args->timestamp) > ssl_async_handshake_window()) { /* 500 us by default */
             return;
         }
     }
