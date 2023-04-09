@@ -482,13 +482,17 @@ func testMySQLProtocolClassification(t *testing.T, tr *Tracer, clientHost, targe
 	}
 }
 
-func testPostgresProtocolClassification(t *testing.T, tr *Tracer, _, targetHost, serverHost string) {
+func testPostgresProtocolClassification(t *testing.T, tr *Tracer, clientHost, targetHost, serverHost string) {
 	skipFunc := composeSkips(skipIfNotLinux, skipIfUsingNAT)
 	skipFunc(t, testContext{
 		serverAddress: serverHost,
 		serverPort:    postgresPort,
 		targetAddress: targetHost,
 	})
+
+	if clientHost != "127.0.0.1" {
+		t.Skip("postgres tests are not supported DNat")
+	}
 
 	postgresTeardown := func(t *testing.T, ctx testContext) {
 		db := ctx.extras["db"].(*bun.DB)
