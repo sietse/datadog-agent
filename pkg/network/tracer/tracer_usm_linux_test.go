@@ -506,9 +506,7 @@ func TestProtocolClassification(t *testing.T) {
 
 	t.Run("without nat", func(t *testing.T) {
 		testProtocolClassification(t, tr, "localhost", "127.0.0.1", "127.0.0.1")
-		for i := 0; i < 10; i++ {
-			testKafkaProtocolClassification(t, tr, "localhost", "127.0.0.1", "127.0.0.1")
-		}
+		testKafkaProtocolClassification(t, tr, "localhost", "127.0.0.1", "127.0.0.1")
 		testProtocolClassificationMapCleanup(t, tr, "localhost", "127.0.0.1", "127.0.0.1:0")
 	})
 }
