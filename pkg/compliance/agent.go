@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/compliance/k8sconfig"
 	"github.com/DataDog/datadog-agent/pkg/compliance/metrics"
 	"github.com/DataDog/datadog-agent/pkg/config"
 	"github.com/DataDog/datadog-agent/pkg/security/common"
@@ -171,6 +172,12 @@ func (a *Agent) Start() error {
 		wg.Done()
 	}()
 
+	wg.Add(1)
+	go func() {
+		a.runKubeConfigurationsExport(ctx)
+		wg.Done()
+	}()
+
 	go func() {
 		<-ctx.Done()
 		wg.Wait()
@@ -277,6 +284,32 @@ func (a *Agent) runXCCDFBenchmarks(ctx context.Context) {
 	}
 }
 
+func (a *Agent) runKubeConfigurationsExport(ctx context.Context) {
+	runInterval := 30 * time.Minute
+
+	runTicker := time.NewTicker(runInterval)
+	defer runTicker.Stop()
+
+	for i := 0; ; i++ {
+		seed := fmt.Sprintf("%s%s%d", a.opts.Hostname, "kubernetes-configuration", i)
+		jitter := randomJitter(seed, runInterval/10)
+		fmt.Printf("waiting %s\n", jitter)
+		if sleepAborted(ctx, time.After(jitter)) {
+			return
+		}
+		k8sNode := k8sconfig.LoadConfiguration(ctx, a.opts.HostRoot)
+		buf, err := json.Marshal(NewResourceLog(a.opts.Hostname, "kubernetes_node", k8sNode))
+		if err != nil {
+			log.Errorf("failed to serialize kubernetes configuration metadata: %v", err)
+		} else {
+			a.opts.Reporter.ReportRaw(buf, "")
+		}
+		if sleepAborted(ctx, runTicker.C) {
+			return
+		}
+	}
+}
+
 func (a *Agent) reportEvents(ctx context.Context, benchmark *Benchmark, events []*CheckEvent) {
 	for _, event := range events {
 		a.updateEvent(event)
@@ -295,7 +328,7 @@ func (a *Agent) reportEvents(ctx context.Context, benchmark *Benchmark, events [
 
 func (a *Agent) runTelemetry(ctx context.Context) {
 	log.Info("Start collecting Compliance telemetry")
-	defer log.Info("Stopping Compliance telemetry")
+	defer log.Info("Stopped Compliance telemetry")
 
 	metricsTicker := time.NewTicker(1 * time.Minute)
 	defer metricsTicker.Stop()
