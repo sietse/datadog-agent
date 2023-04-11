@@ -182,7 +182,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/tinylib/msgp v1.1.6
-	github.com/twmb/murmur3 v1.1.6
+	github.com/twmb/murmur3 v1.1.7
 	github.com/uptrace/bun v1.1.12
 	github.com/uptrace/bun/dialect/pgdialect v1.1.12
 	github.com/uptrace/bun/driver/pgdriver v1.1.12
