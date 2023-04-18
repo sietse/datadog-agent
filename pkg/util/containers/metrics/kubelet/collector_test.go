@@ -74,6 +74,7 @@ func TestKubeletCollectorLinux(t *testing.T) {
 		Memory: &provider.ContainerMemStats{
 			UsageTotal: pointer.Ptr(12713984.0),
 			RSS:        pointer.Ptr(12238848.0),
+			WorkingSet: pointer.Ptr(12713984.0),
 		},
 	}, cID1Stats)
 
@@ -89,6 +90,7 @@ func TestKubeletCollectorLinux(t *testing.T) {
 		Memory: &provider.ContainerMemStats{
 			UsageTotal: pointer.Ptr(6705152.0),
 			RSS:        pointer.Ptr(6119424.0),
+			WorkingSet: pointer.Ptr(6705152.0),
 		},
 	}, cID2Stats)
 
@@ -104,6 +106,7 @@ func TestKubeletCollectorLinux(t *testing.T) {
 		Memory: &provider.ContainerMemStats{
 			UsageTotal: pointer.Ptr(11325440.0),
 			RSS:        pointer.Ptr(10797056.0),
+			WorkingSet: pointer.Ptr(11325440.0),
 		},
 	}, cID3Stats)
 
