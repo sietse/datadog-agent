@@ -82,6 +82,7 @@ type ActivityTree struct {
 
 	treeType          string
 	differentiateArgs bool
+	DNSMatchMaxDepth  int
 
 	validator ActivityTreeOwner
 
@@ -246,7 +247,7 @@ func (at *ActivityTree) insert(event *model.Event, dryRun bool, generationType N
 	case model.FileOpenEventType:
 		return node.InsertFileEvent(&event.Open.File, event, generationType, at.Stats, dryRun)
 	case model.DNSEventType:
-		return node.InsertDNSEvent(event, generationType, at.Stats, at.DNSNames, dryRun)
+		return node.InsertDNSEvent(event, generationType, at.Stats, at.DNSNames, dryRun, at.DNSMatchMaxDepth)
 	case model.BindEventType:
 		return node.InsertBindEvent(event, generationType, at.Stats, dryRun)
 	case model.SyscallsEventType:

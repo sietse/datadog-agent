@@ -394,6 +394,7 @@ func (m *SecurityProfileManager) OnNewProfileEvent(selector cgroupModel.Workload
 		// reset the last anomaly timestamp to now
 		profile.lastAnomalyNano = uint64(m.timeResolver.ComputeMonotonicTimestamp(time.Now()))
 	}
+	profile.ActivityTree.DNSMatchMaxDepth = m.config.RuntimeSecurity.SecurityProfileDNSMatchMaxDepth
 
 	// prepare the profile for insertion
 	m.prepareProfile(profile)
