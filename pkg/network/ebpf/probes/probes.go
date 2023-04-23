@@ -207,5 +207,6 @@ const (
 	TLSConnectionMap                  BPFMapName = "tls_connection"
 	ConnectionTupleToSocketSKBConnMap BPFMapName = "conn_tuple_to_socket_skb_conn_tuple"
 	ClassificationProgsMap            BPFMapName = "classification_progs"
+	TCPCloseProgsMap                  BPFMapName = "tcp_close_progs"
 	StaticTableMap                    BPFMapName = "http2_static_table"
 )

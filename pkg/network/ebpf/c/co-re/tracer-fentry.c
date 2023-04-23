@@ -213,7 +213,7 @@ int BPF_PROG(tcp_close, struct sock *sk, long timeout) {
     return 0;
 }
 
-SEC("fexit/tcp_close_clean_protocols")
+SEC("fexit/tcp_close")
 int BPF_PROG(tcp_close_clean_protocols_exit, struct sock *sk, long timeout) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
 
@@ -228,7 +228,7 @@ int BPF_PROG(tcp_close_clean_protocols_exit, struct sock *sk, long timeout) {
     return 0;
 }
 
-SEC("fexit/tcp_close_flush")
+SEC("fexit/tcp_close")
 int BPF_PROG(tcp_close_flush_exit, struct sock *sk, long timeout) {
     flush_conn_close_if_full(ctx);
     return 0;
