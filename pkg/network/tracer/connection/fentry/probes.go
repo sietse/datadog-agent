@@ -40,8 +40,7 @@ const (
 	// tcpClose traces the tcp_close() system call
 	tcpClose = "tcp_close"
 	// tcpCloseReturn traces the return of tcp_close() system call
-	tcpCloseCleanProtocolReturn = "tcp_close_clean_protocols_exit"
-	tcpCloseFlushReturn         = "tcp_close_flush_exit"
+	tcpCloseReturn = "tcp_close_exit"
 
 	// We use the following two probes for UDP
 	udpRecvMsg              = "udp_recvmsg"
@@ -83,39 +82,38 @@ const (
 )
 
 var programs = map[string]struct{}{
-	inet6BindRet:                {},
-	inetBindRet:                 {},
-	inetCskAcceptReturn:         {},
-	inetCskListenStop:           {},
-	sockFDLookupRet:             {}, // TODO: not available on certain kernels, will have to one or more hooks to get equivalent functionality; affects HTTPS monitoring (OpenSSL/GnuTLS/GoTLS)
-	tcpRecvMsgReturn:            {},
-	tcpClose:                    {},
-	tcpCloseCleanProtocolReturn: {},
-	tcpCloseFlushReturn:         {},
-	tcpConnect:                  {},
-	tcpFinishConnect:            {},
-	tcpRetransmit:               {},
-	tcpRetransmitRet:            {},
-	tcpSendMsgReturn:            {},
-	tcpSendPageReturn:           {},
-	tcpSetState:                 {},
-	udpDestroySock:              {},
-	udpDestroySockReturn:        {},
-	udpRecvMsg:                  {},
-	udpRecvMsgReturn:            {},
-	udpSendMsgReturn:            {},
-	udpSendPageReturn:           {},
-	udpSendSkb:                  {},
-	udpv6RecvMsg:                {},
-	udpv6RecvMsgReturn:          {},
-	udpv6SendMsgReturn:          {},
-	udpv6SendSkb:                {},
-	skbFreeDatagramLocked:       {},
-	__skbFreeDatagramLocked:     {},
-	skbConsumeUdp:               {},
-	tcpRecvMsgPre5190Return:     {},
-	udpRecvMsgPre5190Return:     {},
-	udpv6RecvMsgPre5190Return:   {},
+	inet6BindRet:              {},
+	inetBindRet:               {},
+	inetCskAcceptReturn:       {},
+	inetCskListenStop:         {},
+	sockFDLookupRet:           {}, // TODO: not available on certain kernels, will have to one or more hooks to get equivalent functionality; affects HTTPS monitoring (OpenSSL/GnuTLS/GoTLS)
+	tcpRecvMsgReturn:          {},
+	tcpClose:                  {},
+	tcpCloseReturn:            {},
+	tcpConnect:                {},
+	tcpFinishConnect:          {},
+	tcpRetransmit:             {},
+	tcpRetransmitRet:          {},
+	tcpSendMsgReturn:          {},
+	tcpSendPageReturn:         {},
+	tcpSetState:               {},
+	udpDestroySock:            {},
+	udpDestroySockReturn:      {},
+	udpRecvMsg:                {},
+	udpRecvMsgReturn:          {},
+	udpSendMsgReturn:          {},
+	udpSendPageReturn:         {},
+	udpSendSkb:                {},
+	udpv6RecvMsg:              {},
+	udpv6RecvMsgReturn:        {},
+	udpv6SendMsgReturn:        {},
+	udpv6SendSkb:              {},
+	skbFreeDatagramLocked:     {},
+	__skbFreeDatagramLocked:   {},
+	skbConsumeUdp:             {},
+	tcpRecvMsgPre5190Return:   {},
+	udpRecvMsgPre5190Return:   {},
+	udpv6RecvMsgPre5190Return: {},
 }
 
 func enableProgram(enabled map[string]struct{}, name string) {
@@ -138,7 +136,7 @@ func enabledPrograms(c *config.Config) (map[string]struct{}, error) {
 		enableProgram(enabled, tcpSendPageReturn)
 		enableProgram(enabled, selectVersionBasedProbe(kv, tcpRecvMsgReturn, tcpRecvMsgPre5190Return, kv5190))
 		enableProgram(enabled, tcpClose)
-		enableProgram(enabled, tcpCloseCleanProtocolReturn)
+		enableProgram(enabled, tcpCloseReturn)
 		enableProgram(enabled, tcpConnect)
 		enableProgram(enabled, tcpFinishConnect)
 		enableProgram(enabled, inetCskAcceptReturn)
