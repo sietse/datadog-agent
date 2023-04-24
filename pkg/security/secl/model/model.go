@@ -208,7 +208,6 @@ type Event struct {
 	Rules        []*MatchedRule `field:"-"`
 
 	// context shared with all events
-	ProcessCacheEntry      *ProcessCacheEntry     `field:"-" json:"-" platform:"linux"`
 	PIDContext             PIDContext             `field:"-" json:"-" platform:"linux"`
 	SpanContext            SpanContext            `field:"-" json:"-" platform:"linux"`
 	ProcessContext         *ProcessContext        `field:"process" event:"*" platform:"linux"`
@@ -257,6 +256,7 @@ type Event struct {
 	Bind BindEvent `field:"bind" event:"bind" platform:"linux"` // [7.37] [Network] [Experimental] A bind was executed
 
 	// internal usage
+	ProcessCacheEntry   *ProcessCacheEntry    `field:"-" json:"-" platform:"linux"`
 	Umount              UmountEvent           `field:"-" json:"-" platform:"linux"`
 	InvalidateDentry    InvalidateDentryEvent `field:"-" json:"-" platform:"linux"`
 	ArgsEnvs            ArgsEnvsEvent         `field:"-" json:"-" platform:"linux"`

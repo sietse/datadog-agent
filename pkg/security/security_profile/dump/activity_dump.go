@@ -607,10 +607,8 @@ func (ad *ActivityDump) Insert(event *model.Event) (newEntry bool) {
 	}()
 
 	// find the node where the event should be inserted
-	entry, _ := event.FieldHandlers.ResolveProcessCacheEntry(event)
-	if entry == nil {
-		return false
-	}
+	entry := event.ProcessCacheEntry
+
 	if !entry.HasCompleteLineage() { // check that the process context lineage is complete, otherwise drop it
 		ad.brokenLineageDrop.Inc()
 		return false

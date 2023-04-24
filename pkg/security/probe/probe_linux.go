@@ -841,16 +841,22 @@ func (p *Probe) handleEvent(CPU int, data []byte) {
 
 	// resolve the process cache entry
 	event.ProcessCacheEntry, _ = p.fieldHandlers.ResolveProcessCacheEntry(event)
+	if event.ProcessCacheEntry == nil {
+		panic("should always return a process cache entry")
+	}
 
 	// use ProcessCacheEntry process context as process context
 	event.ProcessContext = &event.ProcessCacheEntry.ProcessContext
+	if event.ProcessContext == nil {
+		panic("should always return a process context")
+	}
 
 	if process.IsKThread(event.ProcessContext.PPid, event.ProcessContext.Pid) {
 		return
 	}
 
 	if eventType == model.ExitEventType {
-		defer p.resolvers.ProcessResolver.DeleteEntry(event.ProcessCacheEntry.Pid, p.fieldHandlers.ResolveEventTimestamp(event))
+		defer p.resolvers.ProcessResolver.DeleteEntry(event.ProcessContext.Pid, p.fieldHandlers.ResolveEventTimestamp(event))
 	}
 
 	p.DispatchEvent(event)
