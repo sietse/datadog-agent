@@ -42,7 +42,7 @@ func NewVerticalPodAutoscalerCollector() *VerticalPodAutoscalerCollector {
 	return &VerticalPodAutoscalerCollector{
 		metadata: &collectors.CollectorMetadata{
 			IsDefaultVersion:          true,
-			IsStable:                  false,
+			IsStable:                  true,
 			IsMetadataProducer:        true,
 			IsManifestProducer:        true,
 			SupportsManifestBuffering: true,
