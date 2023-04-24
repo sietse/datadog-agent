@@ -23,6 +23,7 @@ import (
 	manager "github.com/DataDog/ebpf-manager"
 
 	"github.com/DataDog/datadog-agent/pkg/ebpf/bytecode/runtime"
+	"github.com/DataDog/datadog-agent/pkg/ebpf/ebpftest"
 	netebpf "github.com/DataDog/datadog-agent/pkg/network/ebpf"
 	"github.com/DataDog/datadog-agent/pkg/network/tracer/offsetguess"
 	"github.com/DataDog/datadog-agent/pkg/process/statsd"
@@ -127,13 +128,14 @@ func (o offsetT) String() string {
 }
 
 func TestOffsetGuess(t *testing.T) {
+	ebpftest.TestBuildMode(t, ebpftest.RuntimeCompiled, "", testOffsetGuess)
+}
+
+func testOffsetGuess(t *testing.T) {
 	cfg := testConfig()
 	// offset guessing used to rely on this previously,
 	// but doesn't anymore
 	cfg.ProtocolClassificationEnabled = false
-	if !cfg.EnableRuntimeCompiler {
-		t.Skip("runtime compilation is not enabled")
-	}
 
 	offsetBuf, err := netebpf.ReadOffsetBPFModule(cfg.BPFDir, cfg.BPFDebug)
 	require.NoError(t, err, "could not read offset bpf module")
@@ -249,7 +251,7 @@ func TestOffsetGuess(t *testing.T) {
 	require.NoError(t, mgr.Start())
 	t.Cleanup(func() { mgr.Stop(manager.CleanAll) })
 
-	server := NewTCPServer(func(c net.Conn) {})
+	server := newTCPServer(func(c net.Conn) {})
 	require.NoError(t, server.Run())
 	t.Cleanup(func() { server.Shutdown() })
 
