@@ -132,8 +132,10 @@ type soRegistration struct {
 
 // unregister return true if there are no more reference to this registration
 func (r *soRegistration) unregister(pathID pathIdentifier) bool {
+	log.Debugf("Trying to unregister %s", pathID.String())
 	r.uniqueProcessesCount--
 	if r.uniqueProcessesCount > 0 {
+		log.Debugf("Unique process count is greater than 0, thus not unregistering %s", pathID.String())
 		return false
 	}
 	if r.unregisterCB != nil {
@@ -141,6 +143,8 @@ func (r *soRegistration) unregister(pathID pathIdentifier) bool {
 			// Even if we fail here, we have to return true, as best effort methodology.
 			// We cannot handle the failure, and thus we should continue.
 			log.Warnf("error while unregistering %s : %s", pathID.String(), err)
+		} else {
+			log.Debugf("successfully unregistered %s", pathID.String())
 		}
 	}
 	return true
@@ -265,13 +269,16 @@ func (r *soRegistry) unregister(pid uint32) {
 	r.m.Lock()
 	defer r.m.Unlock()
 
+	log.Debugf("Trying to unregister pid %d", pid)
 	paths, found := r.byPID[pid]
 	if !found {
+		log.Debugf("Couldn't find the following pid in the byPID map: %d", pid)
 		return
 	}
 	for pathID := range paths {
 		reg, found := r.byID[pathID]
 		if !found {
+			log.Debugf("Couldn't find the following path id in the byID map: %s", pathID.String())
 			continue
 		}
 		if reg.unregister(pathID) {
