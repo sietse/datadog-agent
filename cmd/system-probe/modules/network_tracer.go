@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,6 +41,7 @@ var ErrSysprobeUnsupported = errors.New("system-probe unsupported")
 
 const inactivityLogDuration = 10 * time.Minute
 const inactivityRestartDuration = 20 * time.Minute
+const allConnections = -1
 
 // NetworkTracer is a factory for NPM's tracer
 var NetworkTracer = module.Factory{
@@ -94,7 +96,8 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 	httpMux.HandleFunc("/connections", utils.WithConcurrencyLimit(utils.DefaultMaxConcurrentRequests, func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 		id := getClientID(req)
-		cs, err := nt.tracer.GetActiveConnections(id)
+		maxConnectionPerMessage := getClientMaxConnectionPerMessage(req)
+		cs, err := nt.tracer.GetActiveConnections(id, maxConnectionPerMessage)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -149,7 +152,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/http_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, err := nt.tracer.GetActiveConnections(id)
+		cs, err := nt.tracer.GetActiveConnections(id, allConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -161,7 +164,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/kafka_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, err := nt.tracer.GetActiveConnections(id)
+		cs, err := nt.tracer.GetActiveConnections(id, allConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -173,7 +176,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/http2_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, err := nt.tracer.GetActiveConnections(id)
+		cs, err := nt.tracer.GetActiveConnections(id, allConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -288,6 +291,18 @@ func getClientID(req *http.Request) string {
 		clientID = rawCID
 	}
 	return clientID
+}
+
+func getClientMaxConnectionPerMessage(req *http.Request) int {
+	var maxConnsPerMessage = allConnections
+	if raw := req.URL.Query().Get("max_connection_per_message"); raw != "" {
+		var err error
+		maxConnsPerMessage, err = strconv.Atoi(raw)
+		if err != nil {
+			maxConnsPerMessage = allConnections
+		}
+	}
+	return maxConnsPerMessage
 }
 
 func writeConnections(w http.ResponseWriter, marshaler encoding.Marshaler, cs *network.Connections) {

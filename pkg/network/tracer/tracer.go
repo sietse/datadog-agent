@@ -422,10 +422,10 @@ func (t *Tracer) Stop() {
 }
 
 // GetActiveConnections returns the delta for connection info from the last time it was called with the same clientID
-func (t *Tracer) GetActiveConnections(clientID string) (*network.Connections, error) {
+func (t *Tracer) GetActiveConnections(clientID string, maxConnectionPerMessage int) (*network.Connections, bool, error) {
 	t.bufferLock.Lock()
 	defer t.bufferLock.Unlock()
-	log.Tracef("GetActiveConnections clientID=%s", clientID)
+	log.Tracef("GetActiveConnections clientID=%s maxConnectionPerMessage=%d", clientID, maxConnectionPerMessage)
 
 	t.ebpfTracer.FlushPending()
 	latestTime, err := t.getConnections(t.activeBuffer)
@@ -434,7 +434,12 @@ func (t *Tracer) GetActiveConnections(clientID string) (*network.Connections, er
 	}
 	active := t.activeBuffer.Connections()
 
-	delta := t.state.GetDelta(clientID, latestTime, active, t.reverseDNS.GetDNSStats(), t.usmMonitor.GetHTTPStats(), t.usmMonitor.GetHTTP2Stats(), t.usmMonitor.GetKafkaStats())
+	delta := t.state.GetDelta(clientID, latestTime, active,
+		t.reverseDNS.GetDNSStats(),
+		t.usmMonitor.GetHTTPStats(),
+		t.usmMonitor.GetHTTP2Stats(),
+		t.usmMonitor.GetKafkaStats(),
+	)
 	t.activeBuffer.Reset()
 
 	ips := make([]util.Address, 0, len(delta.Conns)*2)
