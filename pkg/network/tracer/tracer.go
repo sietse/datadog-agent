@@ -73,6 +73,11 @@ var tracerTelemetry = struct {
 	telemetry.NewGauge(tracerModuleName, "conn_stats_map_size", []string{}, "Gauge measuring the size of the active connections map"),
 }
 
+type connections struct {
+	latestTime uint64
+	active     []network.ConnectionStats
+}
+
 // Tracer implements the functionality of the network tracer
 type Tracer struct {
 	config       *config.Config
@@ -83,6 +88,8 @@ type Tracer struct {
 	ebpfTracer   connection.Tracer
 	bpfTelemetry *nettelemetry.EBPFTelemetry
 	lastCheck    *atomic.Int64
+
+	clientConnections map[string]connections
 
 	activeBuffer *network.ConnectionBuffer
 	bufferLock   sync.Mutex
@@ -208,8 +215,14 @@ func newTracer(cfg *config.Config) (*Tracer, error) {
 	tr := &Tracer{
 		config:                     cfg,
 		state:                      state,
+<<<<<<< HEAD
 		reverseDNS:                 newReverseDNS(cfg),
 		usmMonitor:                 newUSMMonitor(cfg, ebpfTracer, bpfTelemetry, constantEditors),
+=======
+		clientConnections:          make(map[string]connections),
+		reverseDNS:                 newReverseDNS(config),
+		usmMonitor:                 newUSMMonitor(config, ebpfTracer, bpfTelemetry, constantEditors),
+>>>>>>> 100294e4d945 (maxConnectionPerMessage)
 		activeBuffer:               network.NewConnectionBuffer(512, 256),
 		conntracker:                conntracker,
 		sourceExcludes:             network.ParseConnectionFilters(cfg.ExcludedSourceConnections),
@@ -427,14 +440,38 @@ func (t *Tracer) GetActiveConnections(clientID string, maxConnectionPerMessage i
 	defer t.bufferLock.Unlock()
 	log.Tracef("GetActiveConnections clientID=%s maxConnectionPerMessage=%d", clientID, maxConnectionPerMessage)
 
-	t.ebpfTracer.FlushPending()
-	latestTime, err := t.getConnections(t.activeBuffer)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving connections: %s", err)
+	cnx, found := t.clientConnections[clientID]
+	if !found {
+		t.ebpfTracer.FlushPending()
+		latestTime, err := t.getConnections(t.activeBuffer)
+		if err != nil {
+			return nil, false, fmt.Errorf("error retrieving connections: %s", err)
+		}
+		t.clientConnections[clientID] = connections{
+			latestTime: latestTime,
+			active:     t.activeBuffer.Connections(),
+		}
+		cnx = t.clientConnections[clientID]
 	}
-	active := t.activeBuffer.Connections()
 
-	delta := t.state.GetDelta(clientID, latestTime, active,
+	// paginate the connections via maxConnectionPerMessage
+	more := false
+	if maxConnectionPerMessage > 0 {
+		if len(cnx.active) > maxConnectionPerMessage {
+			more = true
+			nextActive := cnx.active[maxConnectionPerMessage:]
+			cnx.active = cnx.active[:maxConnectionPerMessage]
+			t.clientConnections[clientID] = connections{
+				latestTime: cnx.latestTime,
+				active:     nextActive,
+			}
+		}
+	}
+	if !more {
+		delete(t.clientConnections, clientID)
+	}
+
+	delta := t.state.GetDelta(clientID, cnx.latestTime, cnx.active,
 		t.reverseDNS.GetDNSStats(),
 		t.usmMonitor.GetHTTPStats(),
 		t.usmMonitor.GetHTTP2Stats(),
@@ -447,26 +484,24 @@ func (t *Tracer) GetActiveConnections(clientID string, maxConnectionPerMessage i
 		ips = append(ips, conn.Source, conn.Dest)
 	}
 	names := t.reverseDNS.Resolve(ips)
-	ctm := t.state.GetTelemetryDelta(clientID, t.getConnTelemetry(len(active)))
-	rctm := t.getRuntimeCompilationTelemetry()
-	khfr := int32(kernel.HeaderProvider.GetResult())
-	coretm := ddebpf.GetCORETelemetryByAsset()
-	pbassets := netebpf.GetModulesInUse()
+	ctm := t.state.GetTelemetryDelta(clientID, t.getConnTelemetry(len(cnx.active)))
+	networkCnx := &network.Connections{
+		BufferedData:  delta.BufferedData,
+		DNS:           names,
+		DNSStats:      delta.DNSStats,
+		HTTP:          delta.HTTP,
+		HTTP2:         delta.HTTP2,
+		Kafka:         delta.Kafka,
+		ConnTelemetry: ctm,
+	}
+	if !found { // first message
+		networkCnx.KernelHeaderFetchResult = int32(kernel.HeaderProvider.GetResult())
+		networkCnx.CompilationTelemetryByAsset = t.getRuntimeCompilationTelemetry()
+		networkCnx.CORETelemetryByAsset = ddebpf.GetCORETelemetryByAsset()
+		networkCnx.PrebuiltAssets = netebpf.GetModulesInUse()
+	}
 	t.lastCheck.Store(time.Now().Unix())
-
-	return &network.Connections{
-		BufferedData:                delta.BufferedData,
-		DNS:                         names,
-		DNSStats:                    delta.DNSStats,
-		HTTP:                        delta.HTTP,
-		HTTP2:                       delta.HTTP2,
-		Kafka:                       delta.Kafka,
-		ConnTelemetry:               ctm,
-		KernelHeaderFetchResult:     khfr,
-		CompilationTelemetryByAsset: rctm,
-		CORETelemetryByAsset:        coretm,
-		PrebuiltAssets:              pbassets,
-	}, nil
+	return networkCnx, more, nil
 }
 
 // RegisterClient registers a clientID with the tracer

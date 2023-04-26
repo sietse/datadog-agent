@@ -97,11 +97,15 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 		start := time.Now()
 		id := getClientID(req)
 		maxConnectionPerMessage := getClientMaxConnectionPerMessage(req)
-		cs, err := nt.tracer.GetActiveConnections(id, maxConnectionPerMessage)
+		cs, more, err := nt.tracer.GetActiveConnections(id, maxConnectionPerMessage)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
 			return
+		}
+		if more {
+			// 206 Partial Content meaning the network tracer have move connections to send
+			w.WriteHeader(http.StatusPartialContent)
 		}
 		contentType := req.Header.Get("Accept")
 		marshaler := encoding.GetMarshaler(contentType)
@@ -152,7 +156,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/http_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, err := nt.tracer.GetActiveConnections(id, allConnections)
+		cs, _, err := nt.tracer.GetActiveConnections(id, allConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -164,7 +168,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/kafka_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, err := nt.tracer.GetActiveConnections(id, allConnections)
+		cs, _, err := nt.tracer.GetActiveConnections(id, allConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -176,7 +180,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/http2_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, err := nt.tracer.GetActiveConnections(id, allConnections)
+		cs, _, err := nt.tracer.GetActiveConnections(id, allConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)

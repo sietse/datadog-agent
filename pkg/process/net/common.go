@@ -158,7 +158,7 @@ func (r *RemoteSysProbeUtil) GetConnections(clientID string, maxConnsPerMessage 
 	}
 
 	// 206 Partial Content meaning the network tracer have move connections to send
-	return conns, resp.StatusCode == 206, nil
+	return conns, resp.StatusCode == http.StatusPartialContent, nil
 }
 
 // GetStats returns the expvar stats of the system probe

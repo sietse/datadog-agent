@@ -165,7 +165,7 @@ func (c *ConnectionsCheck) Run(nextGroupID func() int32, _ *RunOptions) (RunResu
 // Cleanup frees any resource held by the ConnectionsCheck before the agent exits
 func (c *ConnectionsCheck) Cleanup() {}
 
-func (c *ConnectionsCheck) getConnections(maxConnsPerMessage int) (*model.Connections, error) {
+func (c *ConnectionsCheck) getConnections(maxConnsPerMessage int) (connections *model.Connections, err error) {
 	tu, err := net.GetRemoteSystemProbeUtil(c.syscfg.SocketAddress)
 	if err != nil {
 		if c.notInitializedLogLimit.ShouldLog() {
@@ -173,7 +173,20 @@ func (c *ConnectionsCheck) getConnections(maxConnsPerMessage int) (*model.Connec
 		}
 		return nil, ErrTracerStillNotInitialized
 	}
-	return tu.GetConnections(c.tracerClientID, maxConnsPerMessage)
+	for {
+		cnx, more, err := tu.GetConnections(c.tracerClientID, maxConnsPerMessage)
+		if err != nil {
+			return nil, err
+		}
+		if connections == nil {
+			connections = cnx
+		}
+		if !more {
+			return connections, err
+		}
+		connections.Aggregate(cnx)
+	}
+	return connections, nil
 }
 
 func (c *ConnectionsCheck) notifyProcessConnRates(config config.ConfigReader, conns *model.Connections) {
