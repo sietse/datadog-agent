@@ -309,6 +309,13 @@
         "package_version": {
           "type": "string",
           "description": "System package version"
+        },
+        "hashes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "List of cryptographic hashes of the file"
         }
       },
       "additionalProperties": false,
@@ -406,6 +413,13 @@
         "package_version": {
           "type": "string",
           "description": "System package version"
+        },
+        "hashes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "List of cryptographic hashes of the file"
         },
         "destination": {
           "$ref": "#/$defs/File",

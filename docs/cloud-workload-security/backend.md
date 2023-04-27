@@ -325,6 +325,13 @@ CWS logs have the following JSON schema:
                 "package_version": {
                     "type": "string",
                     "description": "System package version"
+                },
+                "hashes": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "List of cryptographic hashes of the file"
                 }
             },
             "additionalProperties": false,
@@ -422,6 +429,13 @@ CWS logs have the following JSON schema:
                 "package_version": {
                     "type": "string",
                     "description": "System package version"
+                },
+                "hashes": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "List of cryptographic hashes of the file"
                 },
                 "destination": {
                     "$ref": "#/$defs/File",
@@ -1767,6 +1781,13 @@ CWS logs have the following JSON schema:
         "package_version": {
             "type": "string",
             "description": "System package version"
+        },
+        "hashes": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array",
+            "description": "List of cryptographic hashes of the file"
         }
     },
     "additionalProperties": false,
@@ -1802,6 +1823,7 @@ CWS logs have the following JSON schema:
 | `change_time` | File change time |
 | `package_name` | System package name |
 | `package_version` | System package version |
+| `hashes` | List of cryptographic hashes of the file |
 
 
 ## `FileEvent`
@@ -1896,6 +1918,13 @@ CWS logs have the following JSON schema:
             "type": "string",
             "description": "System package version"
         },
+        "hashes": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array",
+            "description": "List of cryptographic hashes of the file"
+        },
         "destination": {
             "$ref": "#/$defs/File",
             "description": "Target file information"
@@ -1950,6 +1979,7 @@ CWS logs have the following JSON schema:
 | `change_time` | File change time |
 | `package_name` | System package name |
 | `package_version` | System package version |
+| `hashes` | List of cryptographic hashes of the file |
 | `destination` | Target file information |
 | `new_mount_id` | New Mount ID |
 | `group_id` | Group ID |

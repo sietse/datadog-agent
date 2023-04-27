@@ -498,3 +498,8 @@ func (fh *FieldHandlers) ResolveModuleArgs(ev *model.Event, module *model.LoadMo
 	}
 	return module.Args
 }
+
+// ResolveHashes resolves the hashes of the requested event
+func (fh *FieldHandlers) ResolveHashes(ev *model.Event, f *model.FileEvent) []string {
+	return fh.resolvers.HashResolver.ComputeHashes(ev, f)
+}

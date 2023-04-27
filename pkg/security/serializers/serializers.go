@@ -71,6 +71,8 @@ type FileSerializer struct {
 	PackageName string `json:"package_name,omitempty"`
 	// System package version
 	PackageVersion string `json:"package_version,omitempty"`
+	// List of cryptographic hashes of the file
+	Hashes []string `json:"hashes,omitempty"`
 }
 
 // UserContextSerializer serializes a user context to JSON
@@ -604,7 +606,7 @@ func newFileSerializer(fe *model.FileEvent, e *model.Event, forceInode ...uint64
 	}
 
 	mode := uint32(fe.FileFields.Mode)
-	return &FileSerializer{
+	fs := &FileSerializer{
 		Path:                e.FieldHandlers.ResolveFilePath(e, fe),
 		PathResolutionError: fe.GetPathResolutionError(),
 		Name:                e.FieldHandlers.ResolveFileBasename(e, fe),
@@ -622,6 +624,12 @@ func newFileSerializer(fe *model.FileEvent, e *model.Event, forceInode ...uint64
 		PackageName:         e.FieldHandlers.ResolvePackageName(e, fe),
 		PackageVersion:      e.FieldHandlers.ResolvePackageVersion(e, fe),
 	}
+
+	// lazy hash serialization: we don't want to hash files for every event
+	if fe.HashState == model.Done {
+		fs.Hashes = e.FieldHandlers.ResolveHashes(e, fe)
+	}
+	return fs
 }
 
 func getUint64Pointer(i *uint64) *uint64 {

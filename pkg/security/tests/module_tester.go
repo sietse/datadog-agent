@@ -56,6 +56,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/security/secl/rules"
 	"github.com/DataDog/datadog-agent/pkg/security/security_profile/dump"
 	"github.com/DataDog/datadog-agent/pkg/security/serializers"
+	"github.com/DataDog/datadog-agent/pkg/security/tests/statsdclient"
 	"github.com/DataDog/datadog-agent/pkg/security/utils"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
@@ -268,7 +269,7 @@ type testModule struct {
 	probe         *sprobe.Probe
 	eventHandlers eventHandlers
 	cmdWrapper    cmdWrapper
-	statsdClient  *StatsdClient
+	statsdClient  *statsdclient.StatsdClient
 	proFile       *os.File
 }
 
@@ -850,7 +851,7 @@ func newTestModule(t testing.TB, macroDefs []*rules.MacroDefinition, ruleDefs []
 
 	t.Log("Instantiating a new security module")
 
-	statsdClient := NewStatsdClient()
+	statsdClient := statsdclient.NewStatsdClient()
 
 	testMod = &testModule{
 		secconfig:     secconfig,

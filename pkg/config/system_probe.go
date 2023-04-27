@@ -312,6 +312,14 @@ func InitSystemProbeConfig(cfg Config) {
 	cfg.BindEnvAndSetDefault("runtime_security_config.security_profile.anomaly_detection.unstable_profile_time_threshold", 6000)
 	cfg.BindEnvAndSetDefault("runtime_security_config.security_profile.anomaly_detection.unstable_profile_size_threshold", 50000)
 	cfg.BindEnvAndSetDefault("runtime_security_config.security_profile.anomaly_detection.rate_limiter", 5)
+
+	// CWS - Hash algorithms
+	cfg.BindEnvAndSetDefault("runtime_security_config.hash_resolver.enabled", true)
+	cfg.BindEnvAndSetDefault("runtime_security_config.hash_resolver.event_types", []string{"exec"})
+	cfg.BindEnvAndSetDefault("runtime_security_config.hash_resolver.max_file_size", (1<<20)*10) // 10 MB
+	cfg.BindEnvAndSetDefault("runtime_security_config.hash_resolver.max_hash_rate", 10)
+	cfg.BindEnvAndSetDefault("runtime_security_config.hash_resolver.max_hash_burst", 20)
+	cfg.BindEnvAndSetDefault("runtime_security_config.hash_resolver.hash_algorithms", []string{"sha1"})
 }
 
 func join(pieces ...string) string {

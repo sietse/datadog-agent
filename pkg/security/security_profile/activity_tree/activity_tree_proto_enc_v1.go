@@ -155,7 +155,9 @@ func fileEventToProto(fe *model.FileEvent) *adproto.FileInfo {
 		PackageName:       fe.PkgName,
 		PackageVersion:    fe.PkgVersion,
 		PackageSrcversion: fe.PkgSrcVersion,
+		Hashes:            make([]string, len(fe.Hashes)),
 	}
+	copy(fi.Hashes, fe.Hashes)
 
 	return fi
 }
