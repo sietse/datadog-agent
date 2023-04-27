@@ -150,7 +150,7 @@ func (t *Tracer) Stop() {
 }
 
 // GetActiveConnections returns all active connections
-func (t *Tracer) GetActiveConnections(clientID string) (*network.Connections, error) {
+func (t *Tracer) GetActiveConnections(clientID string, maxConnectionPerMessage int) (*network.Connections, bool, error) {
 	t.connLock.Lock()
 	defer t.connLock.Unlock()
 

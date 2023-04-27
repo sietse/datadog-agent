@@ -41,7 +41,6 @@ var ErrSysprobeUnsupported = errors.New("system-probe unsupported")
 
 const inactivityLogDuration = 10 * time.Minute
 const inactivityRestartDuration = 20 * time.Minute
-const allConnections = -1
 
 // NetworkTracer is a factory for NPM's tracer
 var NetworkTracer = module.Factory{
@@ -156,7 +155,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/http_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, _, err := nt.tracer.GetActiveConnections(id, allConnections)
+		cs, _, err := nt.tracer.GetActiveConnections(id, tracer.AllConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -168,7 +167,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/kafka_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, _, err := nt.tracer.GetActiveConnections(id, allConnections)
+		cs, _, err := nt.tracer.GetActiveConnections(id, tracer.AllConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -180,7 +179,7 @@ func (nt *networkTracer) Register(httpMux *module.Router) error {
 
 	httpMux.HandleFunc("/debug/http2_monitoring", func(w http.ResponseWriter, req *http.Request) {
 		id := getClientID(req)
-		cs, _, err := nt.tracer.GetActiveConnections(id, allConnections)
+		cs, _, err := nt.tracer.GetActiveConnections(id, tracer.AllConnections)
 		if err != nil {
 			log.Errorf("unable to retrieve connections: %s", err)
 			w.WriteHeader(500)
@@ -298,12 +297,12 @@ func getClientID(req *http.Request) string {
 }
 
 func getClientMaxConnectionPerMessage(req *http.Request) int {
-	var maxConnsPerMessage = allConnections
+	var maxConnsPerMessage = tracer.AllConnections
 	if raw := req.URL.Query().Get("max_connection_per_message"); raw != "" {
 		var err error
 		maxConnsPerMessage, err = strconv.Atoi(raw)
 		if err != nil {
-			maxConnsPerMessage = allConnections
+			maxConnsPerMessage = tracer.AllConnections
 		}
 	}
 	return maxConnsPerMessage

@@ -1002,7 +1002,7 @@ func initTracerState(t testing.TB, tr *Tracer) {
 
 func getConnections(t *testing.T, tr *Tracer) *network.Connections {
 	// Iterate through active connections until we find connection created above, and confirm send + recv counts
-	connections, err := tr.GetActiveConnections(clientID)
+	connections, _, err := tr.GetActiveConnections(clientID, AllConnections)
 	require.NoError(t, err)
 	return connections
 }
