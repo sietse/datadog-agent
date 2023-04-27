@@ -368,20 +368,20 @@ func TestUnknownMethodRegression(t *testing.T) {
 			stats := monitor.GetHTTPStats()
 			telemetry := monitor.httpTelemetry
 			hits1XX := telemetry.hits1XX.Get()
-			totalHits := telemetry.totalHits.Get()
 			dropped := telemetry.dropped.Get()
 			rejected := telemetry.rejected.Get()
 			malformed := telemetry.malformed.Get()
-			aggregations := telemetry.aggregations.Get()
 
-			nonDstPortRequests := int64(0)
+			requestsSum := 0
 			for key := range stats {
-				if key.DstPort != 8080 && key.DstIPLow == 0x01010101 {
-					nonDstPortRequests++
-					continue
-				}
 				if key.Method == MethodUnknown {
 					t.Error("detected HTTP request with method unknown")
+				}
+				// we just want our requests
+				if strings.HasPrefix(key.Path.Content, "/request-") &&
+					key.DstPort == 8080 &&
+					key.DstIPLow == 0x01010101 {
+					requestsSum++
 				}
 			}
 
@@ -391,8 +391,7 @@ func TestUnknownMethodRegression(t *testing.T) {
 			// requestGenerator() doesn't query 100 responses
 			require.Equal(t, int64(0), hits1XX)
 
-			requestsSum := totalHits - aggregations
-			require.Equal(t, int64(100), requestsSum-nonDstPortRequests)
+			require.Equal(t, int64(100), requestsSum)
 		})
 	}
 }
