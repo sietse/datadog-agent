@@ -583,7 +583,6 @@ core,github.com/containerd/containerd/api/types,Apache-2.0,"Copyright 2012-2015 
 core,github.com/containerd/containerd/api/types/task,Apache-2.0,"Copyright 2012-2015 Docker, Inc."
 core,github.com/containerd/containerd/archive,Apache-2.0,"Copyright 2012-2015 Docker, Inc."
 core,github.com/containerd/containerd/archive/compression,Apache-2.0,"Copyright 2012-2015 Docker, Inc."
-core,github.com/containerd/containerd/archive/tarheader,Apache-2.0,"Copyright 2012-2015 Docker, Inc."
 core,github.com/containerd/containerd/cio,Apache-2.0,"Copyright 2012-2015 Docker, Inc."
 core,github.com/containerd/containerd/containers,Apache-2.0,"Copyright 2012-2015 Docker, Inc."
 core,github.com/containerd/containerd/content,Apache-2.0,"Copyright 2012-2015 Docker, Inc."
@@ -1119,8 +1118,6 @@ core,github.com/open-policy-agent/opa/internal/compiler/wasm,Apache-2.0,Copyrigh
 core,github.com/open-policy-agent/opa/internal/compiler/wasm/opa,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/debug,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/deepcopy,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
-core,github.com/open-policy-agent/opa/internal/edittree,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
-core,github.com/open-policy-agent/opa/internal/edittree/bitvector,BSD-3-Clause,"Copyright (c) 2014 Dropbox, Inc | Copyright 2016 The OPA Authors.  All rights reserved."
 core,github.com/open-policy-agent/opa/internal/file/archive,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/file/url,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/future,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
@@ -1142,9 +1139,7 @@ core,github.com/open-policy-agent/opa/internal/lcss,Apache-2.0,Copyright 2016 Th
 core,github.com/open-policy-agent/opa/internal/leb128,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/merge,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/planner,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
-core,github.com/open-policy-agent/opa/internal/providers/aws,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
-core,github.com/open-policy-agent/opa/internal/providers/aws/crypto,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
-core,github.com/open-policy-agent/opa/internal/providers/aws/v4,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
+core,github.com/open-policy-agent/opa/internal/providers,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/ref,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/rego/opa,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
 core,github.com/open-policy-agent/opa/internal/semver,Apache-2.0,Copyright 2016 The OPA Authors.  All rights reserved.
