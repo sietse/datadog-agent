@@ -67,6 +67,7 @@ func StartControllers(ctx ControllerContext) error {
 	if err != nil {
 		return err
 	}
+	log.Info("using admissionv1: %v", v1Enabled)
 
 	webhookConfig := webhook.NewConfig(v1Enabled, nsSelectorEnabled)
 	webhookController := webhook.NewController(
