@@ -13,15 +13,21 @@ type SysProbeUtil struct {
 	mock.Mock
 }
 
-// GetConnections provides a mock function with given fields: clientID
-func (_m *SysProbeUtil) GetConnections(clientID string) (*process.Connections, error) {
-	ret := _m.Called(clientID)
+// GetConnections provides a mock function with given fields: clientID, maxConnsPerMessage
+func (_m *SysProbeUtil) GetConnections(clientID string, maxConnsPerMessage int) (*process.Connections, bool, error) {
+	ret := _m.Called(clientID, maxConnsPerMessage)
 
 	var r0 *process.Connections
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*process.Connections, error)); ok {
-		return rf(clientID)
+	var r1 bool
+	var r2 error
+	if rf, ok := ret.Get(0).(func(string, int) (*process.Connections, bool, error)); ok {
+		return rf(clientID, maxConnsPerMessage)
 	}
+
+	if rf, ok := ret.Get(0).(func(string) (*process.Connections, error)); ok {
+		r0, r2 = rf(clientID)
+	}
+
 	if rf, ok := ret.Get(0).(func(string) *process.Connections); ok {
 		r0 = rf(clientID)
 	} else {
@@ -30,13 +36,13 @@ func (_m *SysProbeUtil) GetConnections(clientID string) (*process.Connections, e
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(clientID)
+	if rf, ok := ret.Get(2).(func(string) error); ok {
+		r2 = rf(clientID)
 	} else {
-		r1 = ret.Error(1)
+		r2 = ret.Error(2)
 	}
 
-	return r0, r1
+	return r0, r1, r2
 }
 
 // GetProcStats provides a mock function with given fields: pids
