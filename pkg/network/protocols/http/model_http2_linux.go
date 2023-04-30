@@ -9,6 +9,7 @@
 package http
 
 import (
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"strings"
 
 	"golang.org/x/net/http2/hpack"
@@ -27,6 +28,7 @@ func (tx *EbpfHttp2Tx) Path(buffer []byte) ([]byte, bool) {
 	if err != nil {
 		return nil, false
 	}
+	log.Debugf("decoded path is %q", str)
 	n := copy(buffer, str)
 	// indicate if we knowingly captured the entire path
 	return buffer[:n], true
