@@ -58,8 +58,7 @@ func (gustc grpcUnixSocketTransportCredential) ServerHandshake(conn net.Conn) (n
 	if err != nil || !valid {
 		if err != nil {
 			log.Errorf("unix socket %s -> %s closing connection, error %s", unixConn.LocalAddr(), unixConn.RemoteAddr(), err)
-		}
-		if !valid {
+		} else if !valid {
 			log.Debugf("unix socket %s -> %s closing connection, rejected", unixConn.LocalAddr(), unixConn.RemoteAddr())
 		}
 		// reject the connection
