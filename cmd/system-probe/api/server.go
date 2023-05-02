@@ -9,6 +9,7 @@ import (
 	"expvar"
 	"fmt"
 	"net/http"
+	"runtime"
 
 	gorilla "github.com/gorilla/mux"
 
@@ -47,11 +48,16 @@ func StartServer(cfg *config.Config) error {
 
 	mux.Handle("/debug/vars", http.DefaultServeMux)
 
-	found, allowedUsrID, allowedGrpID, err := filesystem.UserDDAgent()
-	if err != nil || !found {
-		// if user dd-agent doesn't exist, map to root
-		allowedUsrID = 0
-		allowedGrpID = 0
+	allowedUsrID := 0
+	allowedGrpID := 0
+	// onlu linux support unix socket credential
+	if runtime.GOOS == "linux" {
+		allowedUsrID, allowedGrpID, err = filesystem.UserDDAgent()
+		if err != nil {
+			// if user dd-agent doesn't exist, map to root
+			allowedUsrID = 0
+			allowedGrpID = 0
+		}
 	}
 
 	go func() {

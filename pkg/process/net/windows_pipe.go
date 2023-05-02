@@ -9,8 +9,8 @@
 package net
 
 import (
-	"http"
 	"net"
+	"net/http"
 )
 
 // WindowsPipeListener for communicating with Probe

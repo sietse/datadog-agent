@@ -23,8 +23,8 @@ type Permission struct {
 }
 
 // return the user dd-agent uid and gid on Unix, windows doesn't support unix socket credential
-func UserDDAgent() (found bool, usrID int, grpID int, err error) {
-	return false, 0, 0, nil
+func UserDDAgent() (usrID int, grpID int, err error) {
+	return 0, 0, fmt.Errorf("dd-agent doesn't exist")
 }
 
 // NewPermission creates a new instance of `Permission`
