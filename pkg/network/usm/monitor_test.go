@@ -32,6 +32,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/network/protocols/http"
 	"github.com/DataDog/datadog-agent/pkg/network/protocols/http/testutil"
 	libtelemetry "github.com/DataDog/datadog-agent/pkg/network/protocols/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
 )
 
 const (
@@ -351,6 +352,7 @@ func TestUnknownMethodRegression(t *testing.T) {
 
 			targetAddr := "2.2.2.2:8080"
 			serverAddr := "1.1.1.1:8080"
+			serverAddrIP := util.AddressFromString("1.1.1.1")
 			srvDoneFn := testutil.HTTPServer(t, serverAddr, testutil.Options{
 				EnableTLS:          false,
 				EnableKeepAlive:    true,
@@ -380,7 +382,7 @@ func TestUnknownMethodRegression(t *testing.T) {
 				// we just want our requests
 				if strings.HasPrefix(key.Path.Content, "/request-") &&
 					key.DstPort == 8080 &&
-					key.DstIPLow == 0x01010101 {
+					util.FromLowHigh(key.DstIPLow, key.DstIPHigh) == serverAddrIP {
 					requestsSum++
 				}
 			}
