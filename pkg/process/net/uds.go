@@ -36,8 +36,11 @@ func IsUnixNetConnValid(unixConn *net.UnixConn, allowedUsrID int, allowedGrpID i
 	err = sysConn.Control(func(fd uintptr) {
 		ucred, ucredErr = syscall.GetsockoptUcred(int(fd), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
 	})
-	if err != nil || ucredErr != nil {
+	if err != nil {
 		return false, err
+	}
+	if ucredErr != nil {
+		return false, ucredErr
 	}
 	if (ucred.Uid == 0 && ucred.Gid == 0) ||
 		(ucred.Uid == uint32(allowedUsrID) && ucred.Gid == uint32(allowedGrpID)) {
