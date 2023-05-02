@@ -9,6 +9,7 @@
 package net
 
 import (
+	"http"
 	"net"
 )
 
