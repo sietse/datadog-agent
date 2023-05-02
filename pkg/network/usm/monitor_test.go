@@ -368,15 +368,11 @@ func TestUnknownMethodRegression(t *testing.T) {
 			// give time to collect/aggregate
 			time.Sleep(3 * time.Second)
 			stats := monitor.GetHTTPStats()
-			telemetry := monitor.httpTelemetry
-			hits1XX := telemetry.hits1XX.Get()
-			dropped := telemetry.dropped.Get()
-			rejected := telemetry.rejected.Get()
-			malformed := telemetry.malformed.Get()
+			hits1XX, dropped, rejected, malformed := monitor.httpTelemetry.InternalCounters()
 
 			requestsSum := 0
 			for key := range stats {
-				if key.Method == MethodUnknown {
+				if key.Method == http.MethodUnknown {
 					t.Error("detected HTTP request with method unknown")
 				}
 				// we just want our requests
