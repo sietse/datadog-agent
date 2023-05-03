@@ -34,16 +34,21 @@ public class Wget  {
             intException.printStackTrace();
             System.exit(1);
         }
+        System.out.println("finished waiting");
 
         try {
             url = new URL(args[0]);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(15 * 1000);
+            connection.setReadTimeout(15 * 1000);
+
             // skip certificate validation
             connection.setHostnameVerifier(new HostnameVerifier() {
-            public boolean verify(String s, SSLSession sslSession) {
-                return true;
-            }
-                });//(new InvalidCertificateHostVerifier());
+                public boolean verify(String s, SSLSession sslSession) {
+                    return true;
+                }
+            });
             System.out.println("Response code = " + connection.getResponseCode());
 
             BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -54,12 +59,9 @@ public class Wget  {
                 }
             }
             connection.disconnect();
-
-        } catch (IOException urlException) {
-            urlException.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
             System.exit(1);
         }
     }
-
-    
 }
