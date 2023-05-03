@@ -178,13 +178,17 @@ func (c *ConnectionsCheck) getConnections(maxConnsPerMessage int) (connections *
 		if err != nil {
 			return nil, err
 		}
-		if connections == nil {
-			connections = cnx
-		}
 		if !more {
+			if connections == nil {
+				connections = cnx
+			}
 			return connections, err
 		}
-		connections.Aggregate(cnx)
+		if connections == nil {
+			connections = cnx
+		} else {
+			connections.Aggregate(cnx)
+		}
 	}
 }
 
