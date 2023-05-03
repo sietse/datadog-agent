@@ -186,7 +186,6 @@ func (c *ConnectionsCheck) getConnections(maxConnsPerMessage int) (connections *
 		}
 		connections.Aggregate(cnx)
 	}
-	return connections, nil
 }
 
 func (c *ConnectionsCheck) notifyProcessConnRates(config config.ConfigReader, conns *model.Connections) {
