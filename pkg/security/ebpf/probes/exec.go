@@ -123,7 +123,7 @@ var execProbes = []*manager.Probe{
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "fexit_alloc_pid",
+			EBPFFuncName: "kretprobe_alloc_pid",
 		},
 	},
 	{

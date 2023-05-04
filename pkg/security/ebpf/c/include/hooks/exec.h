@@ -145,8 +145,8 @@ int fentry__do_fork(ctx_t *ctx) {
 }
 #endif
 
-SEC("fexit/alloc_pid")
-int fexit_alloc_pid(ctx_t *ctx) {
+SEC("kretprobe/alloc_pid")
+int kretprobe_alloc_pid(struct pt_regs *ctx) {
     struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
     if (!syscall) {
         return 0;
@@ -253,7 +253,7 @@ int fentry_do_coredump(ctx_t *ctx) {
 }
 
 SEC("kprobe/do_exit")
-int kprobe_do_exit(ctx_t *ctx) {
+int kprobe_do_exit(struct pt_regs *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
     u32 tgid = pid_tgid >> 32;
     u32 pid = pid_tgid;
