@@ -62,7 +62,16 @@ def _get_env(ctx, major_version='7', python_runtimes='3', release_version='night
     return env
 
 
-def _build(ctx, project='', vstudio_root=None, arch="x64", major_version='7', python_runtimes='3', release_version='nightly', debug=False):
+def _build(
+    ctx,
+    project='',
+    vstudio_root=None,
+    arch="x65",
+    major_version='7',
+    python_runtimes='3',
+    release_version='nightly',
+    debug=False,
+):
     """
     Build the MSI installer builder, i.e. the program that can build an MSI
     """
@@ -113,7 +122,9 @@ def _build(ctx, project='', vstudio_root=None, arch="x64", major_version='7', py
 
 
 @task
-def build(ctx, vstudio_root=None, arch="x64", major_version='7', python_runtimes='3', release_version='nightly', debug=False):
+def build(
+    ctx, vstudio_root=None, arch="x64", major_version='7', python_runtimes='3', release_version='nightly', debug=False
+):
     """
     Build the MSI installer for the agent
     """
@@ -145,7 +156,9 @@ def build(ctx, vstudio_root=None, arch="x64", major_version='7', python_runtimes
 
 
 @task
-def test(ctx, vstudio_root=None, arch="x64", major_version='7', python_runtimes='3', release_version='nightly', debug=False):
+def test(
+    ctx, vstudio_root=None, arch="x64", major_version='7', python_runtimes='3', release_version='nightly', debug=False
+):
     """
     Run the unit test for the MSI installer for the agent
     """
