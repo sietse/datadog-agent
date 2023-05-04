@@ -127,7 +127,7 @@ int __attribute__((always_inline)) handle_do_fork(struct pt_regs *ctx) {
     return 0;
 }
 
-int __attribute__((always_inline)) handle_do_fork_fentry(struct pt_regs *ctx) {
+int __attribute__((always_inline)) handle_do_fork_fentry(unsigned long long *ctx) {
     struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
     if (!syscall) {
         return 0;
@@ -147,17 +147,17 @@ int __attribute__((always_inline)) handle_do_fork_fentry(struct pt_regs *ctx) {
 }
 
 SEC("fentry/kernel_clone")
-int fentry_kernel_clone(struct pt_regs *ctx) {
+int fentry_kernel_clone(unsigned long long *ctx) {
     return handle_do_fork_fentry(ctx);
 }
 
 SEC("fentry/do_fork")
-int fentry_do_fork(struct pt_regs *ctx) {
+int fentry_do_fork(unsigned long long *ctx) {
     return handle_do_fork_fentry(ctx);
 }
 
 SEC("fentry/_do_fork")
-int fentry__do_fork(struct pt_regs *ctx) {
+int fentry__do_fork(unsigned long long *ctx) {
     return handle_do_fork_fentry(ctx);
 }
 
