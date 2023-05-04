@@ -5,6 +5,7 @@
 #include "constants/offsets/filesystem.h"
 #include "helpers/filesystem.h"
 #include "helpers/syscalls.h"
+#include "constants/fentry_macro.h"
 
 int __attribute__((always_inline)) trace__sys_execveat(struct pt_regs *ctx, const char **argv, const char **env) {
     struct syscall_cache_t syscall = {
@@ -99,7 +100,7 @@ SYSCALL_KPROBE0(vfork) {
 
 #define DO_FORK_STRUCT_INPUT 1
 
-int __attribute__((always_inline)) handle_do_fork(struct pt_regs *ctx) {
+int __attribute__((always_inline)) handle_do_fork(unsigned long long *ctx) {
     struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
     if (!syscall) {
         return 0;
@@ -110,7 +111,7 @@ int __attribute__((always_inline)) handle_do_fork(struct pt_regs *ctx) {
     LOAD_CONSTANT("do_fork_input", input);
 
     if (input == DO_FORK_STRUCT_INPUT) {
-        void *args = (void *)PT_REGS_PARM1(ctx);
+        void *args = (void *)CTX_PARM1(ctx);
         int exit_signal;
         bpf_probe_read(&exit_signal, sizeof(int), (void *)args + 32);
 
@@ -118,7 +119,7 @@ int __attribute__((always_inline)) handle_do_fork(struct pt_regs *ctx) {
             syscall->fork.is_thread = 0;
         }
     } else {
-        u64 flags = (u64)PT_REGS_PARM1(ctx);
+        u64 flags = (u64)CTX_PARM1(ctx);
         if ((flags & SIGCHLD) == SIGCHLD) {
             syscall->fork.is_thread = 0;
         }
@@ -127,42 +128,22 @@ int __attribute__((always_inline)) handle_do_fork(struct pt_regs *ctx) {
     return 0;
 }
 
-int __attribute__((always_inline)) handle_do_fork_fentry(unsigned long long *ctx) {
-    struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
-    if (!syscall) {
-        return 0;
-    }
-    syscall->fork.is_thread = 1;
-
-
-    void *args = (void *)(ctx[0]);
-    int exit_signal;
-    bpf_probe_read(&exit_signal, sizeof(int), (void *)args + 32);
-
-    if (exit_signal == SIGCHLD) {
-        syscall->fork.is_thread = 0;
-    }
-
-    return 0;
-}
-
 SEC("fentry/kernel_clone")
 int fentry_kernel_clone(unsigned long long *ctx) {
-    return handle_do_fork_fentry(ctx);
+    return handle_do_fork(ctx);
 }
 
-/*
+#ifndef USE_FENTRY
 SEC("fentry/do_fork")
 int fentry_do_fork(unsigned long long *ctx) {
-    return handle_do_fork_fentry(ctx);
+    return handle_do_fork(ctx);
 }
 
 SEC("fentry/_do_fork")
 int fentry__do_fork(unsigned long long *ctx) {
-    return handle_do_fork_fentry(ctx);
+    return handle_do_fork(ctx);
 }
-*/
-
+#endif
 
 SEC("kretprobe/alloc_pid")
 int kretprobe_alloc_pid(struct pt_regs *ctx) {

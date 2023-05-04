@@ -66,6 +66,9 @@ func (l *ProbeLoader) Load() (bytecode.AssetReader, bool, error) {
 			asset += "-syscall-wrapper"
 		}
 
+		// TODO(paulcacheux): fix this hack
+		asset = "runtime-security-fentry"
+
 		l.bytecodeReader, err = bytecode.GetReader(l.config.BPFDir, asset+".o")
 		if err != nil {
 			return nil, false, err
