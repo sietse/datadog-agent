@@ -135,7 +135,7 @@ int __attribute__((always_inline)) handle_do_fork_fentry(unsigned long long *ctx
     syscall->fork.is_thread = 1;
 
 
-    void *args = (void *)(ctx[1]);
+    void *args = (void *)(ctx[0]);
     int exit_signal;
     bpf_probe_read(&exit_signal, sizeof(int), (void *)args + 32);
 
