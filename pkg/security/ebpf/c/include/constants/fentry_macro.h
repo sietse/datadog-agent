@@ -3,11 +3,13 @@
 
 #ifdef USE_FENTRY
 
+typedef unsigned long long ctx_t;
 #define CTX_PARM1(ctx) (void *)(ctx[0])
 
 #else
 
-#define CTX_PARM1(ctx) PT_REGS_PARM1((struct pt_regs *)ctx)
+typedef struct pt_regs ctx_t;
+#define CTX_PARM1(ctx) PT_REGS_PARM1(ctx)
 
 #endif
 

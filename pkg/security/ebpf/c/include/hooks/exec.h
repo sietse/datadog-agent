@@ -100,7 +100,7 @@ SYSCALL_KPROBE0(vfork) {
 
 #define DO_FORK_STRUCT_INPUT 1
 
-int __attribute__((always_inline)) handle_do_fork(unsigned long long *ctx) {
+int __attribute__((always_inline)) handle_do_fork(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
     if (!syscall) {
         return 0;
@@ -129,24 +129,24 @@ int __attribute__((always_inline)) handle_do_fork(unsigned long long *ctx) {
 }
 
 SEC("fentry/kernel_clone")
-int fentry_kernel_clone(unsigned long long *ctx) {
+int fentry_kernel_clone(ctx_t *ctx) {
     return handle_do_fork(ctx);
 }
 
 #ifndef USE_FENTRY
 SEC("fentry/do_fork")
-int fentry_do_fork(unsigned long long *ctx) {
+int fentry_do_fork(ctx_t *ctx) {
     return handle_do_fork(ctx);
 }
 
 SEC("fentry/_do_fork")
-int fentry__do_fork(unsigned long long *ctx) {
+int fentry__do_fork(ctx_t *ctx) {
     return handle_do_fork(ctx);
 }
 #endif
 
 SEC("fexit/alloc_pid")
-int fexit_alloc_pid(struct pt_regs *ctx) {
+int fexit_alloc_pid(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
     if (!syscall) {
         return 0;
@@ -243,7 +243,7 @@ int sched_process_fork(struct _tracepoint_sched_process_fork *args) {
 }
 
 SEC("fentry/do_coredump")
-int fentry_do_coredump(struct pt_regs *ctx) {
+int fentry_do_coredump(ctx_t *ctx) {
     u64 key = bpf_get_current_pid_tgid();
     u8 in_coredump = 1;
 
@@ -253,7 +253,7 @@ int fentry_do_coredump(struct pt_regs *ctx) {
 }
 
 SEC("kprobe/do_exit")
-int kprobe_do_exit(struct pt_regs *ctx) {
+int kprobe_do_exit(ctx_t *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
     u32 tgid = pid_tgid >> 32;
     u32 pid = pid_tgid;
