@@ -42,7 +42,7 @@ var execProbes = []*manager.Probe{
 			EBPFFuncName: "kprobe_do_exit",
 		},
 	},
-	{
+	/*{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
 			EBPFFuncName: "fentry_do_fork",
@@ -53,7 +53,7 @@ var execProbes = []*manager.Probe{
 			UID:          SecurityAgentUID,
 			EBPFFuncName: "fentry__do_fork",
 		},
-	},
+	},*/
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,

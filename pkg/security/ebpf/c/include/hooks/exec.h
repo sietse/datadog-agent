@@ -151,6 +151,7 @@ int fentry_kernel_clone(unsigned long long *ctx) {
     return handle_do_fork_fentry(ctx);
 }
 
+/*
 SEC("fentry/do_fork")
 int fentry_do_fork(unsigned long long *ctx) {
     return handle_do_fork_fentry(ctx);
@@ -160,6 +161,8 @@ SEC("fentry/_do_fork")
 int fentry__do_fork(unsigned long long *ctx) {
     return handle_do_fork_fentry(ctx);
 }
+*/
+
 
 SEC("kretprobe/alloc_pid")
 int kretprobe_alloc_pid(struct pt_regs *ctx) {
