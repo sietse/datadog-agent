@@ -7,7 +7,7 @@
 
 #else
 
-#define CTX_PARM1(ctx) PT_REGS_PARM1(ctx)
+#define CTX_PARM1(ctx) PT_REGS_PARM1((struct pt_regs *)ctx)
 
 #endif
 
