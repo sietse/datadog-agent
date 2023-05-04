@@ -522,8 +522,6 @@ def test(
     packages=TEST_PACKAGES,
     bundle_ebpf=False,
     output_path=None,
-    runtime_compiled=False,
-    co_re=False,
     skip_linters=False,
     skip_object_files=False,
     run=None,
@@ -574,15 +572,6 @@ def test(
 
     _, _, env = get_build_flags(ctx)
     env['DD_SYSTEM_PROBE_BPF_DIR'] = EMBEDDED_SHARE_DIR
-    if runtime_compiled:
-        env['DD_ENABLE_RUNTIME_COMPILER'] = "true"
-        env['DD_ALLOW_PRECOMPILED_FALLBACK'] = "false"
-        env['DD_ENABLE_CO_RE'] = "false"
-    elif co_re:
-        env['DD_ENABLE_CO_RE'] = "true"
-        env['DD_ALLOW_RUNTIME_COMPILED_FALLBACK'] = "false"
-        env['DD_ALLOW_PRECOMPILED_FALLBACK'] = "false"
-
     go_root = os.getenv("GOROOT")
     if go_root:
         args["go"] = os.path.join(go_root, "bin", "go")
