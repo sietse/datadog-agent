@@ -127,19 +127,38 @@ int __attribute__((always_inline)) handle_do_fork(struct pt_regs *ctx) {
     return 0;
 }
 
+int __attribute__((always_inline)) handle_do_fork_fentry(struct pt_regs *ctx) {
+    struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
+    if (!syscall) {
+        return 0;
+    }
+    syscall->fork.is_thread = 1;
+
+
+    void *args = (void *)(ctx[1]);
+    int exit_signal;
+    bpf_probe_read(&exit_signal, sizeof(int), (void *)args + 32);
+
+    if (exit_signal == SIGCHLD) {
+        syscall->fork.is_thread = 0;
+    }
+
+    return 0;
+}
+
 SEC("fentry/kernel_clone")
 int fentry_kernel_clone(struct pt_regs *ctx) {
-    return handle_do_fork(ctx);
+    return handle_do_fork_fentry(ctx);
 }
 
 SEC("fentry/do_fork")
 int fentry_do_fork(struct pt_regs *ctx) {
-    return handle_do_fork(ctx);
+    return handle_do_fork_fentry(ctx);
 }
 
 SEC("fentry/_do_fork")
 int fentry__do_fork(struct pt_regs *ctx) {
-    return handle_do_fork(ctx);
+    return handle_do_fork_fentry(ctx);
 }
 
 SEC("kretprobe/alloc_pid")
