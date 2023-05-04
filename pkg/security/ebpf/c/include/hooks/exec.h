@@ -127,18 +127,18 @@ int __attribute__((always_inline)) handle_do_fork(struct pt_regs *ctx) {
     return 0;
 }
 
-SEC("kprobe/kernel_clone")
-int kprobe_kernel_clone(struct pt_regs *ctx) {
+SEC("fentry/kernel_clone")
+int fentry_kernel_clone(struct pt_regs *ctx) {
     return handle_do_fork(ctx);
 }
 
-SEC("kprobe/do_fork")
-int kprobe_do_fork(struct pt_regs *ctx) {
+SEC("fentry/do_fork")
+int fentry_do_fork(struct pt_regs *ctx) {
     return handle_do_fork(ctx);
 }
 
-SEC("kprobe/_do_fork")
-int kprobe__do_fork(struct pt_regs *ctx) {
+SEC("fentry/_do_fork")
+int fentry__do_fork(struct pt_regs *ctx) {
     return handle_do_fork(ctx);
 }
 

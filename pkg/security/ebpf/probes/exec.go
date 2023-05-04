@@ -45,19 +45,19 @@ var execProbes = []*manager.Probe{
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_do_fork",
+			EBPFFuncName: "fentry_do_fork",
 		},
 	},
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe__do_fork",
+			EBPFFuncName: "fentry__do_fork",
 		},
 	},
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_kernel_clone",
+			EBPFFuncName: "fentry_kernel_clone",
 		},
 	},
 	{
