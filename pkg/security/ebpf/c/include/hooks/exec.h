@@ -145,8 +145,8 @@ int fentry__do_fork(unsigned long long *ctx) {
 }
 #endif
 
-SEC("kretprobe/alloc_pid")
-int kretprobe_alloc_pid(struct pt_regs *ctx) {
+SEC("fexit/alloc_pid")
+int fexit_alloc_pid(struct pt_regs *ctx) {
     struct syscall_cache_t *syscall = peek_syscall(EVENT_FORK);
     if (!syscall) {
         return 0;
@@ -242,8 +242,8 @@ int sched_process_fork(struct _tracepoint_sched_process_fork *args) {
     return 0;
 }
 
-SEC("kprobe/do_coredump")
-int kprobe_do_coredump(struct pt_regs *ctx) {
+SEC("fentry/do_coredump")
+int fentry_do_coredump(struct pt_regs *ctx) {
     u64 key = bpf_get_current_pid_tgid();
     u8 in_coredump = 1;
 
