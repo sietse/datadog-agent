@@ -62,6 +62,7 @@ func TestOOMKillCompile(t *testing.T) {
 }
 
 func TestOOMKillProbe(t *testing.T) {
+	ebpftest.LogTracePipe(t)
 	ebpftest.TestBuildModes(t, []ebpftest.BuildMode{ebpftest.RuntimeCompiled, ebpftest.CORE}, "", func(t *testing.T) {
 		if kv < kernel.VersionCode(4, 9, 0) {
 			t.Skipf("Kernel version %v is not supported by the OOM probe", kv)
