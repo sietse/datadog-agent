@@ -93,9 +93,13 @@ func TestOOMKillProbe(t *testing.T) {
 		}
 
 		var result OOMKillStats
+		run := 1
 		require.Eventually(t, func() bool {
+			t.Logf("results run %d\n", run)
+			run += 1
 			results := oomKillProbe.GetAndFlush()
 			for _, r := range results {
+				t.Logf("%+v\n", r)
 				if r.TPid == uint32(cmd.Process.Pid) {
 					result = r
 					return true
