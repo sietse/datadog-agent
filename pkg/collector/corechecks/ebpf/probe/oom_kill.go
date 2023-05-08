@@ -69,7 +69,11 @@ func loadOOMKillCOREProbe(cfg *ebpf.Config) (*OOMKillProbe, error) {
 	}
 
 	var probe *OOMKillProbe
-	err = ebpf.LoadCOREAsset(cfg, "oom-kill.o", func(buf bytecode.AssetReader, opts manager.Options) error {
+	fn := "oom-kill.o"
+	if cfg.BPFDebug {
+		fn = "oom-kill-debug.o"
+	}
+	err = ebpf.LoadCOREAsset(cfg, fn, func(buf bytecode.AssetReader, opts manager.Options) error {
 		probe, err = startOOMKillProbe(buf, opts)
 		return err
 	})

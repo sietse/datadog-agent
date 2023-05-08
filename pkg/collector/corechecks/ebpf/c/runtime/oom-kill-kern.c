@@ -30,10 +30,12 @@ SEC("kprobe/oom_kill_process")
 int BPF_KPROBE(kprobe__oom_kill_process, struct oom_control *oc) {
     struct oom_stats zero = {};
     u32 pid = bpf_get_current_pid_tgid() >> 32;
+    log_debug("kprobe/oom_kill_process: pid=%d\n", pid);
 
     bpf_map_update_elem(&oom_stats, &pid, &zero, BPF_NOEXIST);
     struct oom_stats *s = bpf_map_lookup_elem(&oom_stats, &pid);
     if (!s) {
+        log_debug("kprobe/oom_kill_process: ERR: no stats map entry\n");
         return 0;
     }
 
@@ -42,12 +44,15 @@ int BPF_KPROBE(kprobe__oom_kill_process, struct oom_control *oc) {
 
     struct task_struct *p = (struct task_struct *)BPF_CORE_READ(oc, chosen);
     if (!p) {
+        log_debug("kprobe/oom_kill_process: ERR: no task_struct\n");
         return 0;
     }
     BPF_CORE_READ_INTO(&s->tpid, p, pid);
+    log_debug("kprobe/oom_kill_process: tpid=%d\n", s->tpid);
 
     if (bpf_helper_exists(BPF_FUNC_get_current_comm)) {
         bpf_get_current_comm(&s->fcomm, sizeof(s->fcomm));
+        log_debug("kprobe/oom_kill_process: comm=%s\n", s->fcomm);
     }
     if (bpf_helper_exists(BPF_FUNC_probe_read_str)) {
         BPF_CORE_READ_STR_INTO(&s->tcomm, p, comm);
