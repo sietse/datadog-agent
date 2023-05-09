@@ -173,17 +173,20 @@ func (c *ConnectionsCheck) getConnections(maxConnsPerMessage int) (connections *
 		}
 		return nil, ErrTracerStillNotInitialized
 	}
+	pageToken := uint(0)
 	for {
-		cnx, more, err := tu.GetConnections(c.tracerClientID, maxConnsPerMessage)
+		cnx, err := tu.GetConnections(c.tracerClientID, maxConnsPerMessage, pageToken)
 		if err != nil {
 			return nil, err
 		}
-		if !more {
+		if cnx.PageToken == 0 { // no more page
 			if connections == nil {
 				connections = cnx
 			}
 			return connections, err
 		}
+		pageToken = cnx.PageToken
+
 		if connections == nil {
 			connections = cnx
 		} else {

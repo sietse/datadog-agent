@@ -128,37 +128,36 @@ func (r *RemoteSysProbeUtil) GetProcStats(pids []int32) (*model.ProcStatsWithPer
 }
 
 // GetConnections returns a set of active network connections, retrieved from the system probe service
-func (r *RemoteSysProbeUtil) GetConnections(clientID string, maxConnsPerMessage int) (conns *model.Connections, more bool, err error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s?client_id=%s&max_connection_per_message=%d", connectionsURL, clientID, maxConnsPerMessage), nil)
+func (r *RemoteSysProbeUtil) GetConnections(clientID string, pageSize int, pageToken int) (*model.Connections, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s?client_id=%s&page_size=%d&page_token=%d", connectionsURL, clientID, pageSize, pageToken), nil)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	req.Header.Set("Accept", contentTypeProtobuf)
 	resp, err := r.httpClient.Do(req)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, false, fmt.Errorf("conn request failed: Probe Path %s, url: %s, status code: %d", r.path, connectionsURL, resp.StatusCode)
+		return nil, fmt.Errorf("conn request failed: Probe Path %s, url: %s, status code: %d", r.path, connectionsURL, resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	contentType := resp.Header.Get("Content-type")
-	conns, err = netEncoding.GetUnmarshaler(contentType).Unmarshal(body)
+	conns, err := netEncoding.GetUnmarshaler(contentType).Unmarshal(body)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	// 206 Partial Content meaning the network tracer have move connections to send
-	return conns, resp.StatusCode == http.StatusPartialContent, nil
+	return conns, nil
 }
 
 // GetStats returns the expvar stats of the system probe
