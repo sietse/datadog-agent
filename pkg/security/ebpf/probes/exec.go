@@ -216,8 +216,15 @@ func getExecProbes(fentry bool) []*manager.Probe {
 	return execProbes
 }
 
-func getExecTailCallRoutes(fentry bool) []manager.TailCallRoute {
-	base := []manager.TailCallRoute{
+func getExecTailCallRoutes() []manager.TailCallRoute {
+	return []manager.TailCallRoute{
+		{
+			ProgArrayName: "args_envs_progs",
+			Key:           ExecGetEnvsOffsetKey,
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				EBPFFuncName: "fentry_get_envs_offset",
+			},
+		},
 		{
 			ProgArrayName: "args_envs_progs",
 			Key:           ExecParseArgsEnvsSplitKey,
@@ -233,16 +240,4 @@ func getExecTailCallRoutes(fentry bool) []manager.TailCallRoute {
 			},
 		},
 	}
-
-	if !fentry {
-		base = append(base, manager.TailCallRoute{
-			ProgArrayName: "args_envs_progs",
-			Key:           ExecGetEnvsOffsetKey,
-			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				EBPFFuncName: "fentry_get_envs_offset",
-			},
-		})
-	}
-
-	return base
 }
