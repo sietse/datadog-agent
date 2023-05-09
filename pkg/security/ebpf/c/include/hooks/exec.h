@@ -253,7 +253,7 @@ int fentry_do_coredump(ctx_t *ctx) {
 }
 
 SEC("fentry/do_exit")
-int fentry_do_exit(struct pt_regs *ctx) {
+int fentry_do_exit(ctx_t *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
     u32 tgid = pid_tgid >> 32;
     u32 pid = pid_tgid;
@@ -302,8 +302,8 @@ int fentry_do_exit(struct pt_regs *ctx) {
 }
 
 SEC("fentry/exit_itimers")
-int fentry_exit_itimers(struct pt_regs *ctx) {
-    void *signal = (void *)PT_REGS_PARM1(ctx);
+int fentry_exit_itimers(ctx_t *ctx) {
+    void *signal = (void *)CTX_PARM1(ctx);
 
     u64 pid_tgid = bpf_get_current_pid_tgid();
     u32 tgid = pid_tgid >> 32;
@@ -327,22 +327,22 @@ int fentry_exit_itimers(struct pt_regs *ctx) {
 }
 
 SEC("fentry/prepare_binprm")
-int fentry_prepare_binprm(struct pt_regs *ctx) {
-    return fill_exec_context(ctx);
+int fentry_prepare_binprm(ctx_t *ctx) {
+    return fill_exec_context();
 }
 
 SEC("fentry/bprm_execve")
-int fentry_bprm_execve(struct pt_regs *ctx) {
-    return fill_exec_context(ctx);
+int fentry_bprm_execve(ctx_t *ctx) {
+    return fill_exec_context();
 }
 
 SEC("fentry/security_bprm_check")
-int fentry_security_bprm_check(struct pt_regs *ctx) {
-    return fill_exec_context(ctx);
+int fentry_security_bprm_check(ctx_t *ctx) {
+    return fill_exec_context();
 }
 
 SEC("fentry/get_envs_offset")
-int fentry_get_envs_offset(struct pt_regs *ctx) {
+int fentry_get_envs_offset(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
         return 0;
