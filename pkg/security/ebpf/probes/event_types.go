@@ -9,6 +9,8 @@
 package probes
 
 import (
+	"fmt"
+
 	manager "github.com/DataDog/ebpf-manager"
 
 	"github.com/DataDog/datadog-agent/pkg/security/secl/compiler/eval"
@@ -71,8 +73,26 @@ var SnapshotSelectors = []manager.ProbesSelector{
 
 var selectorsPerEventTypeStore map[eval.EventType][]manager.ProbesSelector
 
+func kprobeOrFentry(funcName string, fentry bool, skipIfFentry bool) *manager.ProbeSelector {
+	if fentry && skipIfFentry {
+		return nil
+	}
+
+	hookType := "kprobe"
+	if fentry {
+		hookType = "fentry"
+	}
+
+	return &manager.ProbeSelector{
+		ProbeIdentificationPair: manager.ProbeIdentificationPair{
+			UID:          SecurityAgentUID,
+			EBPFFuncName: fmt.Sprintf("%s_%s", hookType, funcName),
+		},
+	}
+}
+
 // GetSelectorsPerEventType returns the list of probes that should be activated for each event
-func GetSelectorsPerEventType() map[eval.EventType][]manager.ProbesSelector {
+func GetSelectorsPerEventType(fentry bool) map[eval.EventType][]manager.ProbesSelector {
 	if selectorsPerEventTypeStore != nil {
 		return selectorsPerEventTypeStore
 	}
@@ -84,32 +104,32 @@ func GetSelectorsPerEventType() map[eval.EventType][]manager.ProbesSelector {
 			&manager.AllOf{Selectors: []manager.ProbesSelector{
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "sys_exit"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "sched_process_fork"}},
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_do_exit"}},
+				kprobeOrFentry("do_exit", fentry, false),
 				&manager.BestEffort{Selectors: []manager.ProbesSelector{
-					// &manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_prepare_binprm"}},
-					&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_bprm_execve"}},
-					&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_security_bprm_check"}},
+					kprobeOrFentry("prepare_binprm", fentry, true),
+					kprobeOrFentry("bprm_execve", fentry, false),
+					kprobeOrFentry("security_bprm_check", fentry, true),
 				}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_setup_new_exec_interp"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID + "_a", EBPFFuncName: "kprobe_setup_new_exec_args_envs"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_setup_arg_pages"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_mprotect_fixup"}},
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_exit_itimers"}},
+				kprobeOrFentry("exit_itimers", fentry, false),
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_vfs_open"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_do_dentry_open"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_commit_creds"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kretprobe_alloc_pid"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_switch_task_namespaces"}},
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_do_coredump"}},
+				kprobeOrFentry("do_coredump", fentry, false),
 			}},
 			&manager.OneOf{Selectors: []manager.ProbesSelector{
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_cgroup_procs_write"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_cgroup1_procs_write"}},
 			}},
 			&manager.OneOf{Selectors: []manager.ProbesSelector{
-				// &manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry__do_fork"}},
-				// &manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_do_fork"}},
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "fentry_kernel_clone"}},
+				kprobeOrFentry("_do_fork", fentry, true),
+				kprobeOrFentry("do_fork", fentry, true),
+				kprobeOrFentry("kernel_clone", fentry, false),
 			}},
 			&manager.OneOf{Selectors: []manager.ProbesSelector{
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: SecurityAgentUID, EBPFFuncName: "kprobe_cgroup_tasks_write"}},

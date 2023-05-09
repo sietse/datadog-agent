@@ -1038,7 +1038,7 @@ func (p *Probe) updateProbes(ruleEventTypes []eval.EventType) error {
 	var activatedProbes []manager.ProbesSelector
 
 	// extract probe to activate per the event types
-	for eventType, selectors := range probes.GetSelectorsPerEventType() {
+	for eventType, selectors := range probes.GetSelectorsPerEventType(true) {
 		if (eventType == "*" || slices.Contains(eventTypes, eventType) || p.isNeededForActivityDump(eventType)) && p.validEventTypeForConfig(eventType) {
 			activatedProbes = append(activatedProbes, selectors...)
 		}
