@@ -544,20 +544,20 @@ int __attribute__((always_inline)) fetch_interpreter(struct pt_regs *ctx, struct
     return handle_interpreted_exec_event(ctx, syscall, interpreter);
 }
 
-SEC("kprobe/setup_new_exec")
-int kprobe_setup_new_exec_interp(struct pt_regs *ctx) {
-    struct linux_binprm *bprm = (struct linux_binprm *) PT_REGS_PARM1(ctx);
+SEC("fentry/setup_new_exec")
+int fentry_setup_new_exec_interp(ctx_t *ctx) {
+    struct linux_binprm *bprm = (struct linux_binprm *) CTX_PARM1(ctx);
     return fetch_interpreter(ctx, bprm);
 }
 
-SEC("kprobe/setup_new_exec")
-int kprobe_setup_new_exec_args_envs(struct pt_regs *ctx) {
+SEC("fentry/setup_new_exec")
+int fentry_setup_new_exec_args_envs(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
         return 0;
     }
 
-    void *bprm = (void *)PT_REGS_PARM1(ctx);
+    void *bprm = (void *)CTX_PARM1(ctx);
 
     int argc = 0;
     u64 argc_offset;
@@ -590,8 +590,8 @@ int kprobe_setup_new_exec_args_envs(struct pt_regs *ctx) {
     return 0;
 }
 
-SEC("kprobe/setup_arg_pages")
-int kprobe_setup_arg_pages(struct pt_regs *ctx) {
+SEC("fentry/setup_arg_pages")
+int fentry_setup_arg_pages(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
         return 0;
@@ -658,8 +658,8 @@ int __attribute__((always_inline)) send_exec_event(struct pt_regs *ctx) {
     return 0;
 }
 
-SEC("kprobe/mprotect_fixup")
-int kprobe_mprotect_fixup(struct pt_regs *ctx) {
+SEC("fentry/mprotect_fixup")
+int fentry_mprotect_fixup(struct pt_regs *ctx) {
     return send_exec_event(ctx);
 }
 
