@@ -15,19 +15,19 @@ var execProbes = []*manager.Probe{
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_prepare_binprm",
+			EBPFFuncName: "fentry_prepare_binprm",
 		},
 	},
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_bprm_execve",
+			EBPFFuncName: "fentry_bprm_execve",
 		},
 	},
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_security_bprm_check",
+			EBPFFuncName: "fentry_security_bprm_check",
 		},
 	},
 	{
@@ -39,7 +39,7 @@ var execProbes = []*manager.Probe{
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_do_exit",
+			EBPFFuncName: "fentry_do_exit",
 		},
 	},
 	/*{
@@ -87,7 +87,7 @@ var execProbes = []*manager.Probe{
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_exit_itimers",
+			EBPFFuncName: "fentry_exit_itimers",
 		},
 	},
 	{
@@ -218,7 +218,7 @@ func getExecTailCallRoutes() []manager.TailCallRoute {
 			ProgArrayName: "args_envs_progs",
 			Key:           ExecGetEnvsOffsetKey,
 			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				EBPFFuncName: "kprobe_get_envs_offset",
+				EBPFFuncName: "fentry_get_envs_offset",
 			},
 		},
 		{

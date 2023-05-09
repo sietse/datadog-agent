@@ -252,8 +252,8 @@ int fentry_do_coredump(ctx_t *ctx) {
     return 0;
 }
 
-SEC("kprobe/do_exit")
-int kprobe_do_exit(struct pt_regs *ctx) {
+SEC("fentry/do_exit")
+int fentry_do_exit(struct pt_regs *ctx) {
     u64 pid_tgid = bpf_get_current_pid_tgid();
     u32 tgid = pid_tgid >> 32;
     u32 pid = pid_tgid;
@@ -301,8 +301,8 @@ int kprobe_do_exit(struct pt_regs *ctx) {
     return 0;
 }
 
-SEC("kprobe/exit_itimers")
-int kprobe_exit_itimers(struct pt_regs *ctx) {
+SEC("fentry/exit_itimers")
+int fentry_exit_itimers(struct pt_regs *ctx) {
     void *signal = (void *)PT_REGS_PARM1(ctx);
 
     u64 pid_tgid = bpf_get_current_pid_tgid();
@@ -326,23 +326,23 @@ int kprobe_exit_itimers(struct pt_regs *ctx) {
     return 0;
 }
 
-SEC("kprobe/prepare_binprm")
-int kprobe_prepare_binprm(struct pt_regs *ctx) {
+SEC("fentry/prepare_binprm")
+int fentry_prepare_binprm(struct pt_regs *ctx) {
     return fill_exec_context(ctx);
 }
 
-SEC("kprobe/bprm_execve")
-int kprobe_bprm_execve(struct pt_regs *ctx) {
+SEC("fentry/bprm_execve")
+int fentry_bprm_execve(struct pt_regs *ctx) {
     return fill_exec_context(ctx);
 }
 
-SEC("kprobe/security_bprm_check")
-int kprobe_security_bprm_check(struct pt_regs *ctx) {
+SEC("fentry/security_bprm_check")
+int fentry_security_bprm_check(struct pt_regs *ctx) {
     return fill_exec_context(ctx);
 }
 
-SEC("kprobe/get_envs_offset")
-int kprobe_get_envs_offset(struct pt_regs *ctx) {
+SEC("fentry/get_envs_offset")
+int fentry_get_envs_offset(struct pt_regs *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
         return 0;
