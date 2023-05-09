@@ -326,10 +326,12 @@ int fentry_exit_itimers(ctx_t *ctx) {
     return 0;
 }
 
+#ifndef USE_FENTRY
 SEC("fentry/prepare_binprm")
 int fentry_prepare_binprm(ctx_t *ctx) {
     return fill_exec_context();
 }
+#endif
 
 SEC("fentry/bprm_execve")
 int fentry_bprm_execve(ctx_t *ctx) {

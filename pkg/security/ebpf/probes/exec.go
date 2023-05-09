@@ -12,12 +12,12 @@ import manager "github.com/DataDog/ebpf-manager"
 
 // execProbes holds the list of probes used to track processes execution
 var execProbes = []*manager.Probe{
-	{
+	/*{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
 			EBPFFuncName: "fentry_prepare_binprm",
 		},
-	},
+	},*/
 	{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID:          SecurityAgentUID,
