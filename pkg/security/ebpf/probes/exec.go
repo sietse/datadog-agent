@@ -10,137 +10,141 @@ package probes
 
 import manager "github.com/DataDog/ebpf-manager"
 
-// execProbes holds the list of probes used to track processes execution
-var execProbes = []*manager.Probe{
-	/*{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_prepare_binprm",
+func getExecProbes(fentry bool) []*manager.Probe {
+	var execProbes = []*manager.Probe{
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "fentry_bprm_execve",
+			},
 		},
-	},*/
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_bprm_execve",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "fentry_security_bprm_check",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_security_bprm_check",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "sched_process_fork",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "sched_process_fork",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "fentry_do_exit",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_do_exit",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "fentry_kernel_clone",
+			},
 		},
-	},
-	/*{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_do_fork",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_cgroup_procs_write",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry__do_fork",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_cgroup1_procs_write",
+			},
 		},
-	},*/
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_kernel_clone",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_cgroup_tasks_write",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_cgroup_procs_write",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_cgroup1_tasks_write",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_cgroup1_procs_write",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "fentry_exit_itimers",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_cgroup_tasks_write",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_setup_new_exec_interp",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_cgroup1_tasks_write",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID + "_a",
+				EBPFFuncName: "kprobe_setup_new_exec_args_envs",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_exit_itimers",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_setup_arg_pages",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_setup_new_exec_interp",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_mprotect_fixup",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID + "_a",
-			EBPFFuncName: "kprobe_setup_new_exec_args_envs",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_commit_creds",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_setup_arg_pages",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kretprobe_alloc_pid",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_mprotect_fixup",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "kprobe_switch_task_namespaces",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_commit_creds",
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          SecurityAgentUID,
+				EBPFFuncName: "fentry_do_coredump",
+			},
 		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kretprobe_alloc_pid",
-		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "kprobe_switch_task_namespaces",
-		},
-	},
-	{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID:          SecurityAgentUID,
-			EBPFFuncName: "fentry_do_coredump",
-		},
-	},
-}
+	}
 
-func getExecProbes() []*manager.Probe {
+	if !fentry {
+		execProbes = append(execProbes, []*manager.Probe{
+			{
+				ProbeIdentificationPair: manager.ProbeIdentificationPair{
+					UID:          SecurityAgentUID,
+					EBPFFuncName: "fentry_prepare_binprm",
+				},
+			},
+			{
+				ProbeIdentificationPair: manager.ProbeIdentificationPair{
+					UID:          SecurityAgentUID,
+					EBPFFuncName: "fentry_do_fork",
+				},
+			},
+			{
+				ProbeIdentificationPair: manager.ProbeIdentificationPair{
+					UID:          SecurityAgentUID,
+					EBPFFuncName: "fentry__do_fork",
+				},
+			},
+		}...)
+	}
+
 	execProbes = append(execProbes, ExpandSyscallProbes(&manager.Probe{
 		ProbeIdentificationPair: manager.ProbeIdentificationPair{
 			UID: SecurityAgentUID,
@@ -212,15 +216,8 @@ func getExecProbes() []*manager.Probe {
 	return execProbes
 }
 
-func getExecTailCallRoutes() []manager.TailCallRoute {
-	return []manager.TailCallRoute{
-		/*{
-			ProgArrayName: "args_envs_progs",
-			Key:           ExecGetEnvsOffsetKey,
-			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				EBPFFuncName: "fentry_get_envs_offset",
-			},
-		},*/
+func getExecTailCallRoutes(fentry bool) []manager.TailCallRoute {
+	base := []manager.TailCallRoute{
 		{
 			ProgArrayName: "args_envs_progs",
 			Key:           ExecParseArgsEnvsSplitKey,
@@ -236,4 +233,16 @@ func getExecTailCallRoutes() []manager.TailCallRoute {
 			},
 		},
 	}
+
+	if !fentry {
+		base = append(base, manager.TailCallRoute{
+			ProgArrayName: "args_envs_progs",
+			Key:           ExecGetEnvsOffsetKey,
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				EBPFFuncName: "fentry_get_envs_offset",
+			},
+		})
+	}
+
+	return base
 }

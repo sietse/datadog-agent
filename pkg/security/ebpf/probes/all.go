@@ -55,13 +55,13 @@ func computeDefaultEventsRingBufferSize() uint32 {
 }
 
 // AllProbes returns the list of all the probes of the runtime security module
-func AllProbes() []*manager.Probe {
+func AllProbes(fentry bool) []*manager.Probe {
 	if len(allProbes) > 0 {
 		return allProbes
 	}
 
 	allProbes = append(allProbes, getAttrProbes()...)
-	allProbes = append(allProbes, getExecProbes()...)
+	allProbes = append(allProbes, getExecProbes(fentry)...)
 	allProbes = append(allProbes, getLinkProbe()...)
 	allProbes = append(allProbes, getMkdirProbes()...)
 	allProbes = append(allProbes, getMountProbes()...)
@@ -241,10 +241,10 @@ func AllRingBuffers() []*manager.RingBuffer {
 }
 
 // AllTailRoutes returns the list of all the tail call routes
-func AllTailRoutes(ERPCDentryResolutionEnabled, networkEnabled, supportMmapableMaps bool) []manager.TailCallRoute {
+func AllTailRoutes(ERPCDentryResolutionEnabled, networkEnabled, supportMmapableMaps, useFentry bool) []manager.TailCallRoute {
 	var routes []manager.TailCallRoute
 
-	routes = append(routes, getExecTailCallRoutes()...)
+	routes = append(routes, getExecTailCallRoutes(useFentry)...)
 	routes = append(routes, getDentryResolverTailCallRoutes(ERPCDentryResolutionEnabled, supportMmapableMaps)...)
 	routes = append(routes, getSysExitTailCallRoutes()...)
 	if networkEnabled {

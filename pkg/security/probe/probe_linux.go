@@ -114,6 +114,8 @@ type PlatformProbe struct {
 	isRuntimeDiscarded bool
 	constantOffsets    map[string]uint64
 	runtimeCompiled    bool
+
+	useFentry bool
 }
 
 func (p *Probe) detectKernelVersion() error {
@@ -1038,7 +1040,7 @@ func (p *Probe) updateProbes(ruleEventTypes []eval.EventType) error {
 	var activatedProbes []manager.ProbesSelector
 
 	// extract probe to activate per the event types
-	for eventType, selectors := range probes.GetSelectorsPerEventType(true) {
+	for eventType, selectors := range probes.GetSelectorsPerEventType(p.useFentry) {
 		if (eventType == "*" || slices.Contains(eventTypes, eventType) || p.isNeededForActivityDump(eventType)) && p.validEventTypeForConfig(eventType) {
 			activatedProbes = append(activatedProbes, selectors...)
 		}
@@ -1389,6 +1391,7 @@ func NewProbe(config *config.Config, opts Opts) (*Probe, error) {
 			erpcRequest:          &erpc.ERPCRequest{},
 			isRuntimeDiscarded:   !opts.DontDiscardRuntime,
 			anomalyDetectionSent: make(map[model.EventType]*atomic.Uint64),
+			useFentry:            true,
 		},
 	}
 	for i := model.EventType(0); i < model.MaxKernelEventType; i++ {
@@ -1415,7 +1418,7 @@ func NewProbe(config *config.Config, opts Opts) (*Probe, error) {
 	useRingBuffers := p.UseRingBuffers()
 	useMmapableMaps := p.kernelVersion.HaveMmapableMaps()
 
-	p.Manager = ebpf.NewRuntimeSecurityManager(useRingBuffers)
+	p.Manager = ebpf.NewRuntimeSecurityManager(useRingBuffers, p.useFentry)
 
 	p.ensureConfigDefaults()
 
@@ -1570,7 +1573,7 @@ func NewProbe(config *config.Config, opts Opts) (*Probe, error) {
 	}
 
 	// tail calls
-	p.managerOptions.TailCallRouter = probes.AllTailRoutes(p.Config.Probe.ERPCDentryResolutionEnabled, p.Config.Probe.NetworkEnabled, useMmapableMaps)
+	p.managerOptions.TailCallRouter = probes.AllTailRoutes(p.Config.Probe.ERPCDentryResolutionEnabled, p.Config.Probe.NetworkEnabled, useMmapableMaps, p.useFentry)
 	if !p.Config.Probe.ERPCDentryResolutionEnabled || useMmapableMaps {
 		// exclude the programs that use the bpf_probe_write_user helper
 		p.managerOptions.ExcludedFunctions = probes.AllBPFProbeWriteUserProgramFunctions()
