@@ -31,7 +31,8 @@ func NewDefaultOptions() manager.Options {
 				// LogSize is the size of the log buffer given to the verifier. Give it a big enough (2 * 1024 * 1024)
 				// value so that all our programs fit. If the verifier ever outputs a `no space left on device` error,
 				// we'll need to increase this value.
-				LogSize: 2097152,
+				LogLevel: ebpf.LogLevelBranch | ebpf.LogLevelStats,
+				LogSize:  2097152,
 			},
 		},
 
