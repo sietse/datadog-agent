@@ -1061,6 +1061,10 @@ func (p *Probe) updateProbes(ruleEventTypes []eval.EventType) error {
 	// Print the list of unique probe identification IDs that are registered
 	var selectedIDs []manager.ProbeIdentificationPair
 	for _, selector := range activatedProbes {
+		if selector == nil {
+			continue
+		}
+
 		for _, id := range selector.GetProbesIdentificationPairList() {
 			var exists bool
 			for _, selectedID := range selectedIDs {
