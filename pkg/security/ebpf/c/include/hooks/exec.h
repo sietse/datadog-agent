@@ -515,7 +515,7 @@ int kprobe_parse_args_envs(struct pt_regs *ctx) {
     return 0;
 }
 
-int __attribute__((always_inline)) fetch_interpreter(struct pt_regs *ctx, struct linux_binprm *bprm) {
+int __attribute__((always_inline)) fetch_interpreter(ctx_t *ctx, struct linux_binprm *bprm) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
         return 0;
