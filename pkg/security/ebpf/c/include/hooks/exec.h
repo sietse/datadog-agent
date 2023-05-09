@@ -544,14 +544,14 @@ int __attribute__((always_inline)) fetch_interpreter(ctx_t *ctx, struct linux_bi
     return handle_interpreted_exec_event(ctx, syscall, interpreter);
 }
 
-SEC("kprobe/setup_new_exec")
-int kprobe_setup_new_exec_interp(ctx_t *ctx) {
+SEC("fentry/setup_new_exec")
+int fentry_setup_new_exec_interp(ctx_t *ctx) {
     struct linux_binprm *bprm = (struct linux_binprm *) CTX_PARM1(ctx);
     return fetch_interpreter(ctx, bprm);
 }
 
-SEC("kprobe/setup_new_exec")
-int kprobe_setup_new_exec_args_envs(ctx_t *ctx) {
+SEC("fentry/setup_new_exec")
+int fentry_setup_new_exec_args_envs(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
         return 0;
