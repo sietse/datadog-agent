@@ -10,6 +10,7 @@ package probe
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -76,6 +77,14 @@ func TestOOMKillProbe(t *testing.T) {
 		pf, err := writeTempFile(t, "oom-kill-py", oomKilledPython)
 		require.NoError(t, err)
 		defer os.Remove(pf.Name())
+
+		var stat unix.Stat_t
+		err = unix.Stat(fmt.Sprintf("/proc/%d/task/%d/ns/pid", os.Getpid(), unix.Gettid()), &stat)
+		require.NoError(t, err)
+		t.Logf("pidns: %d\n", stat.Ino)
+		err = unix.Stat("/proc/1/ns/pid", &stat)
+		require.NoError(t, err)
+		t.Logf("root pidns: %d\n", stat.Ino)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		t.Cleanup(cancel)
