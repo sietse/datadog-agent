@@ -222,7 +222,7 @@ func getExecTailCallRoutes() []manager.TailCallRoute {
 			ProgArrayName: "args_envs_progs",
 			Key:           ExecGetEnvsOffsetKey,
 			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				EBPFFuncName: "fentry_get_envs_offset",
+				EBPFFuncName: "kprobe_get_envs_offset",
 			},
 		},
 		{

@@ -343,8 +343,8 @@ int fentry_security_bprm_check(ctx_t *ctx) {
     return fill_exec_context();
 }
 
-SEC("fentry/get_envs_offset")
-int fentry_get_envs_offset(ctx_t *ctx) {
+SEC("kprobe/get_envs_offset")
+int kprobe_get_envs_offset(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
         return 0;
