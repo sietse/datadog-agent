@@ -47,6 +47,7 @@ import (
 
 const defaultUDPConnTimeoutNanoSeconds = uint64(time.Duration(120) * time.Second)
 const tracerModuleName = "network_tracer"
+const maxConnectionPerMessage = 600
 
 // Telemetry
 // Will track the count of expired TCP connections
@@ -215,14 +216,9 @@ func newTracer(cfg *config.Config) (*Tracer, error) {
 	tr := &Tracer{
 		config:                     cfg,
 		state:                      state,
-<<<<<<< HEAD
 		reverseDNS:                 newReverseDNS(cfg),
 		usmMonitor:                 newUSMMonitor(cfg, ebpfTracer, bpfTelemetry, constantEditors),
-=======
 		clientConnections:          make(map[string]connections),
-		reverseDNS:                 newReverseDNS(config),
-		usmMonitor:                 newUSMMonitor(config, ebpfTracer, bpfTelemetry, constantEditors),
->>>>>>> 100294e4d945 (maxConnectionPerMessage)
 		activeBuffer:               network.NewConnectionBuffer(512, 256),
 		conntracker:                conntracker,
 		sourceExcludes:             network.ParseConnectionFilters(cfg.ExcludedSourceConnections),
@@ -434,44 +430,8 @@ func (t *Tracer) Stop() {
 	close(t.exitTelemetry)
 }
 
-// GetActiveConnections returns the delta for connection info from the last time it was called with the same clientID
-func (t *Tracer) GetActiveConnections(clientID string, maxConnectionPerMessage int) (*network.Connections, bool, error) {
-	t.bufferLock.Lock()
-	defer t.bufferLock.Unlock()
-	log.Tracef("GetActiveConnections clientID=%s maxConnectionPerMessage=%d", clientID, maxConnectionPerMessage)
-
-	cnx, found := t.clientConnections[clientID]
-	if !found {
-		t.ebpfTracer.FlushPending()
-		latestTime, err := t.getConnections(t.activeBuffer)
-		if err != nil {
-			return nil, false, fmt.Errorf("error retrieving connections: %s", err)
-		}
-		t.clientConnections[clientID] = connections{
-			latestTime: latestTime,
-			active:     t.activeBuffer.Connections(),
-		}
-		cnx = t.clientConnections[clientID]
-	}
-
-	// paginate the connections via maxConnectionPerMessage
-	more := false
-	if maxConnectionPerMessage > 0 {
-		if len(cnx.active) > maxConnectionPerMessage {
-			more = true
-			nextActive := cnx.active[maxConnectionPerMessage:]
-			cnx.active = cnx.active[:maxConnectionPerMessage]
-			t.clientConnections[clientID] = connections{
-				latestTime: cnx.latestTime,
-				active:     nextActive,
-			}
-		}
-	}
-	if !more {
-		delete(t.clientConnections, clientID)
-	}
-
-	delta := t.state.GetDelta(clientID, cnx.latestTime, cnx.active,
+func (t *Tracer) getActiveDeltaConnections(clientID string, latestTime uint64, active []network.ConnectionStats) *network.Connections {
+	delta := t.state.GetDelta(clientID, latestTime, active,
 		t.reverseDNS.GetDNSStats(),
 		t.usmMonitor.GetHTTPStats(),
 		t.usmMonitor.GetHTTP2Stats(),
@@ -484,15 +444,86 @@ func (t *Tracer) GetActiveConnections(clientID string, maxConnectionPerMessage i
 		ips = append(ips, conn.Source, conn.Dest)
 	}
 	names := t.reverseDNS.Resolve(ips)
-	ctm := t.state.GetTelemetryDelta(clientID, t.getConnTelemetry(len(cnx.active)))
-	networkCnx := &network.Connections{
-		BufferedData:  delta.BufferedData,
-		DNS:           names,
-		DNSStats:      delta.DNSStats,
-		HTTP:          delta.HTTP,
-		HTTP2:         delta.HTTP2,
-		Kafka:         delta.Kafka,
-		ConnTelemetry: ctm,
+	return &network.Connections{
+		BufferedData: delta.BufferedData,
+		DNS:          names,
+		DNSStats:     delta.DNSStats,
+		HTTP:         delta.HTTP,
+		HTTP2:        delta.HTTP2,
+		Kafka:        delta.Kafka,
+	}
+}
+
+// GetActiveConnections returns the delta for connection info from the last time it was called with the same clientID
+func (t *Tracer) GetActiveConnections(clientID string) (*network.Connections, error) {
+	t.bufferLock.Lock()
+	defer t.bufferLock.Unlock()
+	log.Tracef("GetActiveConnections clientID=%s maxConnectionPerMessage=%d", clientID, maxConnectionPerMessage)
+
+	t.ebpfTracer.FlushPending()
+	latestTime, err := t.getConnections(t.activeBuffer)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving connections: %s", err)
+	}
+	active := t.activeBuffer.Connections()
+
+	networkCnx := t.getActiveDeltaConnections(clientID, latestTime, active)
+	networkCnx.ConnTelemetry = t.state.GetTelemetryDelta(clientID, t.getConnTelemetry(len(active)))
+	networkCnx.KernelHeaderFetchResult = int32(kernel.HeaderProvider.GetResult())
+	networkCnx.CompilationTelemetryByAsset = t.getRuntimeCompilationTelemetry()
+	networkCnx.CORETelemetryByAsset = ddebpf.GetCORETelemetryByAsset()
+	networkCnx.PrebuiltAssets = netebpf.GetModulesInUse()
+
+	t.lastCheck.Store(time.Now().Unix())
+	return networkCnx, nil
+}
+
+// GetActiveConnectionsPaged returns the delta for connection info from the last time it was called with the same clientID
+// pageSize is the maximum numbers of connections that will be reported
+// pageToken is the connections index
+//
+// the return value networkCnx.PageToken will contain the next pageToken for the next call
+// if networkCnx.PageToken == 0 this mean there are no more connections to be sent
+//
+// The context is saved per clientID
+func (t *Tracer) GetActiveConnectionsPaged(clientID string, pageSize uint, pageToken uint) (*network.Connections, error) {
+	t.bufferLock.Lock()
+	defer t.bufferLock.Unlock()
+	log.Tracef("GetActiveConnectionsPaged clientID=%s pageSize=%d pageToken=%s", clientID, pageSize, pageToken)
+
+	allCnx, found := t.clientConnections[clientID]
+	if !found {
+		t.ebpfTracer.FlushPending()
+		latestTime, err := t.getConnections(t.activeBuffer)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving connections: %s", err)
+		}
+		t.clientConnections[clientID] = connections{
+			latestTime: latestTime,
+			active:     t.activeBuffer.Connections(),
+		}
+		allCnx = t.clientConnections[clientID]
+	}
+
+	lenAllCnx := uint(len(allCnx.active))
+	if pageToken >= lenAllCnx {
+		delete(t.clientConnections, clientID)
+		return nil, fmt.Errorf("GetActiveConnectionsPaged invalid pageToken %d cnx %d", pageToken, len(allCnx.active))
+	}
+	if (pageToken + pageSize) > lenAllCnx {
+		pageSize = lenAllCnx - pageToken
+	}
+
+	active := allCnx.active[pageToken:pageSize]
+	networkCnx := t.getActiveDeltaConnections(clientID, allCnx.latestTime, active)
+	networkCnx.ConnTelemetry = t.state.GetTelemetryDelta(clientID, t.getConnTelemetry(len(allCnx.active)))
+
+	if pageToken+pageSize >= lenAllCnx {
+		// last page, we don't more data to send after this call
+		networkCnx.PageToken = 0
+		delete(t.clientConnections, clientID)
+	} else {
+		networkCnx.PageToken = pageToken + pageSize
 	}
 	if !found { // first message
 		networkCnx.KernelHeaderFetchResult = int32(kernel.HeaderProvider.GetResult())
@@ -500,8 +531,9 @@ func (t *Tracer) GetActiveConnections(clientID string, maxConnectionPerMessage i
 		networkCnx.CORETelemetryByAsset = ddebpf.GetCORETelemetryByAsset()
 		networkCnx.PrebuiltAssets = netebpf.GetModulesInUse()
 	}
+
 	t.lastCheck.Store(time.Now().Unix())
-	return networkCnx, more, nil
+	return networkCnx, nil
 }
 
 // RegisterClient registers a clientID with the tracer
