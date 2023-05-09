@@ -40,7 +40,7 @@ func main() {
 
 	printConns := func(now time.Time) {
 		fmt.Printf("-- %s --\n", now)
-		cs, _, err := t.GetActiveConnections(fmt.Sprintf("%d", os.Getpid()), tracer.AllConnections)
+		cs, err := t.GetActiveConnections(fmt.Sprintf("%d", os.Getpid()))
 		if err != nil {
 			fmt.Println(err)
 		}

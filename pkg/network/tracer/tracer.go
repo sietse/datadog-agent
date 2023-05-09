@@ -47,7 +47,6 @@ import (
 
 const defaultUDPConnTimeoutNanoSeconds = uint64(time.Duration(120) * time.Second)
 const tracerModuleName = "network_tracer"
-const maxConnectionPerMessage = 600
 
 // Telemetry
 // Will track the count of expired TCP connections
@@ -459,7 +458,7 @@ func (t *Tracer) getActiveDeltaConnections(clientID string, latestTime uint64, a
 func (t *Tracer) GetActiveConnections(clientID string) (*network.Connections, error) {
 	t.bufferLock.Lock()
 	defer t.bufferLock.Unlock()
-	log.Tracef("GetActiveConnections clientID=%s maxConnectionPerMessage=%d", clientID, maxConnectionPerMessage)
+	log.Tracef("GetActiveConnections clientID=%s", clientID)
 
 	t.ebpfTracer.FlushPending()
 	latestTime, err := t.getConnections(t.activeBuffer)
@@ -501,7 +500,7 @@ func (t *Tracer) GetActiveConnectionsPaged(clientID string, pageSize uint, pageT
 		}
 		t.clientPagedConnections[clientID] = connections{
 			latestTime: latestTime,
-			active:     t.activeBuffer.Connections(),
+			active:     copy(t.activeBuffer.Connections()),
 		}
 		allCnx = t.clientPagedConnections[clientID]
 	}
