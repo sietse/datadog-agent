@@ -284,7 +284,7 @@ int fentry_do_exit(ctx_t *ctx) {
         struct proc_cache_t *pc = fill_process_context(&event.process);
         fill_container_context(pc, &event.container);
         fill_span_context(&event.span);
-        event.exit_code = (u32)PT_REGS_PARM1(ctx);
+        event.exit_code = (u32)CTX_PARM1(ctx);
         u8 *in_coredump = (u8 *)bpf_map_lookup_elem(&tasks_in_coredump, &pid_tgid);
         if (in_coredump) {
             event.exit_code |= 0x80;
