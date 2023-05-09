@@ -44,7 +44,7 @@ SYSCALL_KPROBE4(execveat, int, fd, const char *, filename, const char **, argv, 
     return trace__sys_execveat(ctx, argv, env);
 }
 
-int __attribute__((always_inline)) handle_interpreted_exec_event(struct pt_regs *ctx, struct syscall_cache_t *syscall, struct file *file) {
+int __attribute__((always_inline)) handle_interpreted_exec_event(ctx_t *ctx, struct syscall_cache_t *syscall, struct file *file) {
     struct inode *interpreter_inode;
     bpf_probe_read(&interpreter_inode, sizeof(interpreter_inode), &file->f_inode);
 
