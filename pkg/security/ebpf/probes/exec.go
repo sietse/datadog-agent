@@ -214,13 +214,13 @@ func getExecProbes() []*manager.Probe {
 
 func getExecTailCallRoutes() []manager.TailCallRoute {
 	return []manager.TailCallRoute{
-		{
+		/*{
 			ProgArrayName: "args_envs_progs",
 			Key:           ExecGetEnvsOffsetKey,
 			ProbeIdentificationPair: manager.ProbeIdentificationPair{
 				EBPFFuncName: "fentry_get_envs_offset",
 			},
-		},
+		},*/
 		{
 			ProgArrayName: "args_envs_progs",
 			Key:           ExecParseArgsEnvsSplitKey,
