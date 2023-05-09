@@ -90,7 +90,8 @@ type Tracer struct {
 	bpfTelemetry *nettelemetry.EBPFTelemetry
 	lastCheck    *atomic.Int64
 
-	clientConnections map[string]connections
+	// clientPagedConnections keep the context between multiple paged call to GetConnections()
+	clientPagedConnections map[string]connections
 
 	activeBuffer *network.ConnectionBuffer
 	bufferLock   sync.Mutex
@@ -218,7 +219,7 @@ func newTracer(cfg *config.Config) (*Tracer, error) {
 		state:                      state,
 		reverseDNS:                 newReverseDNS(cfg),
 		usmMonitor:                 newUSMMonitor(cfg, ebpfTracer, bpfTelemetry, constantEditors),
-		clientConnections:          make(map[string]connections),
+		clientPagedConnections:     make(map[string]connections),
 		activeBuffer:               network.NewConnectionBuffer(512, 256),
 		conntracker:                conntracker,
 		sourceExcludes:             network.ParseConnectionFilters(cfg.ExcludedSourceConnections),
@@ -491,23 +492,23 @@ func (t *Tracer) GetActiveConnectionsPaged(clientID string, pageSize uint, pageT
 	defer t.bufferLock.Unlock()
 	log.Tracef("GetActiveConnectionsPaged clientID=%s pageSize=%d pageToken=%s", clientID, pageSize, pageToken)
 
-	allCnx, found := t.clientConnections[clientID]
+	allCnx, found := t.clientPagedConnections[clientID]
 	if !found {
 		t.ebpfTracer.FlushPending()
 		latestTime, err := t.getConnections(t.activeBuffer)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving connections: %s", err)
 		}
-		t.clientConnections[clientID] = connections{
+		t.clientPagedConnections[clientID] = connections{
 			latestTime: latestTime,
 			active:     t.activeBuffer.Connections(),
 		}
-		allCnx = t.clientConnections[clientID]
+		allCnx = t.clientPagedConnections[clientID]
 	}
 
 	lenAllCnx := uint(len(allCnx.active))
 	if pageToken >= lenAllCnx {
-		delete(t.clientConnections, clientID)
+		delete(t.clientPagedConnections, clientID)
 		return nil, fmt.Errorf("GetActiveConnectionsPaged invalid pageToken %d cnx %d", pageToken, len(allCnx.active))
 	}
 	if (pageToken + pageSize) > lenAllCnx {
@@ -521,7 +522,7 @@ func (t *Tracer) GetActiveConnectionsPaged(clientID string, pageSize uint, pageT
 	if pageToken+pageSize >= lenAllCnx {
 		// last page, we don't more data to send after this call
 		networkCnx.PageToken = 0
-		delete(t.clientConnections, clientID)
+		delete(t.clientPagedConnections, clientID)
 	} else {
 		networkCnx.PageToken = pageToken + pageSize
 	}
