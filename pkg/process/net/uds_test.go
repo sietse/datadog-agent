@@ -135,9 +135,14 @@ func lookupUser(t *testing.T, name string) (usrID int, grpID int, usrIDstr strin
 }
 
 func checkIfSudoExist(t *testing.T) {
-	err := exec.Command("sudo", "id").Run()
+	sudo := exec.Command("sudo", "id")
+	err := sudo.Start()
 	if err != nil {
 		t.Skipf("sudo is not installed %s", err)
+	}
+	time.Sleep(100 * time.Millisecond)
+	if !sudo.ProcessState.Exited() {
+		t.Skipf("sudo is interactive")
 	}
 }
 
