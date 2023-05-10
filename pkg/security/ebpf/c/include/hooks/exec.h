@@ -343,7 +343,7 @@ int fentry_security_bprm_check(ctx_t *ctx) {
     return fill_exec_context();
 }
 
-SEC("tp_btf/get_envs_offset")
+SEC("fentry/get_envs_offset")
 int fentry_get_envs_offset(ctx_t *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
@@ -460,7 +460,7 @@ void __attribute__((always_inline)) parse_args_envs(struct pt_regs *ctx, struct 
     }
 }
 
-SEC("tp_btf/parse_args_envs_split")
+SEC("fentry/parse_args_envs_split")
 int fentry_parse_args_envs_split(struct pt_regs *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
@@ -489,7 +489,7 @@ int fentry_parse_args_envs_split(struct pt_regs *ctx) {
     return 0;
 }
 
-SEC("tp_btf/parse_args_envs")
+SEC("fentry/parse_args_envs")
 int fentry_parse_args_envs(struct pt_regs *ctx) {
     struct syscall_cache_t *syscall = peek_current_or_impersonated_exec_syscall();
     if (!syscall) {
