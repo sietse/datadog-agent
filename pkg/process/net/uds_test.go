@@ -9,6 +9,7 @@
 package net
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -134,20 +135,16 @@ func lookupUser(t *testing.T, name string) (usrID int, grpID int, usrIDstr strin
 	return usrID, grpID, usr.Username, grp.Name
 }
 
-func checkIfSudoExist(t *testing.T) {
-	sudo := exec.Command("sudo", "id")
-	err := sudo.Start()
-	if err != nil {
-		t.Skipf("sudo is not installed %s", err)
-	}
-	time.Sleep(100 * time.Millisecond)
-	if !sudo.ProcessState.Exited() {
-		t.Skipf("sudo is interactive")
+func checkIfSudoExistAndNotInteractive(t *testing.T) {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+	defer cancel()
+	if err := exec.CommandContext(ctx, "sudo", "id").Run(); err != nil {
+		t.Skipf("sudo is not installed or interactive")
 	}
 }
 
 func TestHttpServe(t *testing.T) {
-	checkIfSudoExist(t)
+	checkIfSudoExistAndNotInteractive(t)
 
 	uid, gid, uidStr, gidStr := lookupUser(t, "nobody")
 
