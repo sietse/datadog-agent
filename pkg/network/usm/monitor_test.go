@@ -376,7 +376,7 @@ func TestUnknownMethodRegression(t *testing.T) {
 					t.Error("detected HTTP request with method unknown")
 				}
 				// we just want our requests
-				if strings.HasPrefix(key.Path.Content, "/request-") &&
+				if strings.Contains(key.Path.Content, "/request-") &&
 					key.DstPort == 8080 &&
 					util.FromLowHigh(key.DstIPLow, key.DstIPHigh) == serverAddrIP {
 					requestsSum++
@@ -389,7 +389,7 @@ func TestUnknownMethodRegression(t *testing.T) {
 			// requestGenerator() doesn't query 100 responses
 			require.Equal(t, int64(0), hits1XX)
 
-			require.Equal(t, int64(100), requestsSum)
+			require.Equal(t, int(100), requestsSum)
 		})
 	}
 }
