@@ -84,6 +84,7 @@ type fakeHandler struct {
 
 func (f *fakeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	f.request = req.URL.String()
+	w.WriteHeader(200)
 }
 
 func testHttpServe(t *testing.T, shouldFailed bool, f *fakeHandler, prefixCmd []string, uid int, gid int) (err error) {
@@ -103,6 +104,7 @@ func testHttpServe(t *testing.T, shouldFailed bool, f *fakeHandler, prefixCmd []
 	go func() {
 		cmd := append(prefixCmd, "curl", "-s", "--unix-socket", socketPath, "http://unix/test")
 		o, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput()
+		conn.Close() // closing the server
 		if !shouldFailed {
 			if err != nil {
 				t.Log(cmd, string(o))
