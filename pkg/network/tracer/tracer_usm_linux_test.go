@@ -816,9 +816,14 @@ func TestJavaInjection(t *testing.T) {
 				cfg.ProtocolClassificationEnabled = true
 				cfg.CollectTCPv4Conns = true
 				cfg.CollectTCPv6Conns = true
+
+				serverDoneFn := testutil.HTTPServer(t, "127.0.0.1:5443", testutil.Options{
+					EnableTLS: true,
+				})
+				t.Cleanup(serverDoneFn)
 			},
 			postTracerSetup: func(t *testing.T, ctx testContext) {
-				require.NoError(t, javatestutil.RunJavaVersion(t, "openjdk:15-oraclelinux8", "Wget https://httpbin.org/anything/java-tls-request", regexp.MustCompile("Response code = .*")), "Failed running Java version")
+				require.NoError(t, javatestutil.RunJavaVersion(t, "openjdk:15-oraclelinux8", "Wget https://localhost:5443/anything/java-tls-request", regexp.MustCompile("Response code = .*")), "Failed running Java version")
 			},
 			validation: func(t *testing.T, ctx testContext, tr *Tracer) {
 				// Iterate through active connections until we find connection created above
@@ -842,7 +847,7 @@ func TestJavaInjection(t *testing.T) {
 					}
 
 					return false
-				}, 4*time.Second, time.Second, "couldn't find http connection matching: %s", "https://httpbin.org/anything/java-tls-request")
+				}, 4*time.Second, time.Second, "couldn't find http connection matching: %s", "https://localhost:5443/anything/java-tls-request")
 			},
 		},
 	}
