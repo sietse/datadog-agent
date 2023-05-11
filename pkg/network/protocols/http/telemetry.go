@@ -29,14 +29,14 @@ type Telemetry struct {
 	aggregations *libtelemetry.Metric
 }
 
-func NewTelemetry() (*Telemetry, error) {
+func NewTelemetry() *Telemetry {
 	metricGroup := libtelemetry.NewMetricGroup(
 		"usm.http",
 		libtelemetry.OptExpvar,
 		libtelemetry.OptMonotonic,
 	)
 
-	t := &Telemetry{
+	return &Telemetry{
 		Then:         atomic.NewInt64(time.Now().Unix()),
 		hits1XX:      metricGroup.NewMetric("hits1xx"),
 		hits2XX:      metricGroup.NewMetric("hits2xx"),
@@ -51,8 +51,6 @@ func NewTelemetry() (*Telemetry, error) {
 		rejected:  metricGroup.NewMetric("rejected", libtelemetry.OptStatsd),
 		malformed: metricGroup.NewMetric("malformed", libtelemetry.OptStatsd),
 	}
-
-	return t, nil
 }
 
 func (t *Telemetry) Count(tx HttpTX) {
