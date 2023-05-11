@@ -65,7 +65,7 @@ func HttpServe(l net.Listener, handler http.Handler, allowedUsrID int, allowedGr
 				if err != nil {
 					log.Errorf("unix socket %s -> %s closing connection, error %s", unixConn.LocalAddr(), unixConn.RemoteAddr(), err)
 				} else if !valid {
-					log.Debugf("unix socket %s -> %s closing connection, rejected", unixConn.LocalAddr(), unixConn.RemoteAddr())
+					log.Debugf("unix socket %s -> %s closing connection, rejected. User accessing this socket require to be root or %d/%d (uid/gid)", unixConn.LocalAddr(), unixConn.RemoteAddr(), allowedUsrID, allowedGrpID)
 				}
 				// reject the connection
 				c.Close()
