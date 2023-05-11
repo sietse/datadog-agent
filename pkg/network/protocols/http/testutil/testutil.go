@@ -36,17 +36,18 @@ type Options struct {
 	SlowResponse       time.Duration
 }
 
-func getNetIPV4TCPTimestamp(t *testing.T) bool {
+func isNetIPV4TCPTimestampEnabled(t *testing.T) bool {
 	oldTCPTS, err := sysctl.Get("net.ipv4.tcp_timestamps")
 	if err != nil {
 		t.Logf("can't get TCP timestamp %s", err)
+		return false
 	}
 	return oldTCPTS == "1"
 }
 
 func setNetIPV4TCPTimestamp(t *testing.T, enable bool) {
 	if os.Geteuid() != 0 {
-		if getNetIPV4TCPTimestamp(t) != enable {
+		if isNetIPV4TCPTimestampEnabled(t) != enable {
 			t.Skip("skipping as we don't have enough permission to change net.ipv4.tcp_timestamps")
 		}
 		return
@@ -83,7 +84,7 @@ func HTTPServer(t *testing.T, addr string, options Options) func() {
 	/* Save and recover TCP timestamp option */
 	oldTCPTS := false
 	if options.EnableTCPTimestamp != nil {
-		oldTCPTS = getNetIPV4TCPTimestamp(t)
+		oldTCPTS = isNetIPV4TCPTimestampEnabled(t)
 		setNetIPV4TCPTimestamp(t, *options.EnableTCPTimestamp)
 	}
 
