@@ -48,7 +48,6 @@ func TestHTTPMonitorCaptureRequestMultipleTimes(t *testing.T) {
 	monitor := newHTTPMonitor(t)
 	serverAddr := "localhost:8081"
 	srvDoneFn := testutil.HTTPServer(t, serverAddr, testutil.Options{})
-	defer srvDoneFn()
 
 	client := nethttp.Client{}
 
@@ -63,6 +62,7 @@ func TestHTTPMonitorCaptureRequestMultipleTimes(t *testing.T) {
 		io.ReadAll(resp.Body)
 		resp.Body.Close()
 	}
+	srvDoneFn()
 
 	occurrences := 0
 	require.Eventually(t, func() bool {
@@ -187,13 +187,13 @@ func TestHTTPMonitorIntegrationWithResponseBody(t *testing.T) {
 						EnableKeepAlive:    true,
 						EnableTCPTimestamp: &TCPTimestamp.value,
 					})
-					defer srvDoneFn()
 
 					requestFn := requestGenerator(t, targetAddr, bytes.Repeat([]byte("a"), tt.requestBodySize))
 					var requests []*nethttp.Request
 					for i := 0; i < 100; i++ {
 						requests = append(requests, requestFn())
 					}
+					srvDoneFn()
 
 					assertAllRequestsExists(t, monitor, requests)
 				})
@@ -255,12 +255,12 @@ func TestHTTPMonitorIntegrationSlowResponse(t *testing.T) {
 						SlowResponse:       slowResponseTimeout,
 						EnableTCPTimestamp: &TCPTimestamp.value,
 					})
-					defer srvDoneFn()
 
 					monitor := newHTTPMonitor(t)
 
 					// Perform a number of random requests
 					req := requestGenerator(t, targetAddr, emptyBody)()
+					srvDoneFn()
 
 					// Ensure all captured transactions get sent to user-space
 					time.Sleep(10 * time.Millisecond)
@@ -358,12 +358,12 @@ func TestUnknownMethodRegression(t *testing.T) {
 				EnableKeepAlive:    true,
 				EnableTCPTimestamp: &TCPTimestamp.value,
 			})
-			defer srvDoneFn()
 
 			requestFn := requestGenerator(t, targetAddr, emptyBody)
 			for i := 0; i < 100; i++ {
 				requestFn()
 			}
+			srvDoneFn()
 
 			// give time to collect/aggregate
 			time.Sleep(3 * time.Second)
@@ -401,7 +401,6 @@ func TestRSTPacketRegression(t *testing.T) {
 	srvDoneFn := testutil.HTTPServer(t, serverAddr, testutil.Options{
 		EnableKeepAlive: true,
 	})
-	defer srvDoneFn()
 
 	// Create a "raw" TCP socket that will serve as our HTTP client
 	// We do this in order to configure the socket option SO_LINGER
@@ -418,6 +417,7 @@ func TestRSTPacketRegression(t *testing.T) {
 	// Configure SO_LINGER to 0 so that triggers an RST when the socket is terminated
 	require.NoError(t, c.(*net.TCPConn).SetLinger(0))
 	c.Close()
+	srvDoneFn()
 	time.Sleep(100 * time.Millisecond)
 
 	// Assert that the HTTP request was correctly handled despite its forceful termination
@@ -522,7 +522,6 @@ func testHTTPMonitor(t *testing.T, targetAddr, serverAddr string, numReqs int, o
 	monitor := newHTTPMonitor(t)
 
 	srvDoneFn := testutil.HTTPServer(t, serverAddr, o)
-	defer srvDoneFn()
 
 	// Perform a number of random requests
 	requestFn := requestGenerator(t, targetAddr, emptyBody)
@@ -530,6 +529,7 @@ func testHTTPMonitor(t *testing.T, targetAddr, serverAddr string, numReqs int, o
 	for i := 0; i < numReqs; i++ {
 		requests = append(requests, requestFn())
 	}
+	srvDoneFn()
 
 	// Ensure all captured transactions get sent to user-space
 	assertAllRequestsExists(t, monitor, requests)
