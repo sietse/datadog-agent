@@ -829,7 +829,7 @@ func TestJavaInjection(t *testing.T) {
 				// Iterate through active connections until we find connection created above
 				require.Eventuallyf(t, func() bool {
 					payload := getConnections(t, tr)
-					for key := range payload.HTTP {
+					for key, stats := range payload.HTTP {
 						if key.Path.Content == "/anything/java-tls-request" {
 							t.Log("path content found")
 							// socket filter is not supported on fentry tracer
@@ -838,11 +838,23 @@ func TestJavaInjection(t *testing.T) {
 								return true
 							}
 
+							req, exists := stats.Data[200]
+							if !exists {
+								t.Logf("wrong response, not 200 : %#+v", key)
+								continue
+							}
+
+							if req.StaticTags != network.ConnTagJava {
+								t.Logf("tag not java : %#+v", key)
+								continue
+							}
+
 							for _, c := range payload.Conns {
 								if c.SPort == key.SrcPort && c.DPort == key.DstPort && isTLSTag(c.StaticTags) {
 									return true
 								}
 							}
+							t.Logf("TLS connection tag not found : %#+v", key)
 						}
 					}
 
