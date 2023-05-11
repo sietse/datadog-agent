@@ -86,6 +86,7 @@ func HTTPServer(t *testing.T, addr string, options Options) func() {
 	if options.EnableTCPTimestamp != nil {
 		oldTCPTS = isNetIPV4TCPTimestampEnabled(t)
 		setNetIPV4TCPTimestamp(t, *options.EnableTCPTimestamp)
+		t.Cleanup(func() { setNetIPV4TCPTimestamp(t, oldTCPTS) })
 	}
 
 	srv := &http.Server{
@@ -134,9 +135,6 @@ func HTTPServer(t *testing.T, addr string, options Options) func() {
 	}
 	return func() {
 		srv.Shutdown(context.Background())
-		if options.EnableTCPTimestamp != nil {
-			setNetIPV4TCPTimestamp(t, oldTCPTS)
-		}
 	}
 }
 
