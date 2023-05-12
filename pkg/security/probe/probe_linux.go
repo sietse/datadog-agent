@@ -88,8 +88,9 @@ type PlatformProbe struct {
 	kernelVersion  *kernel.Version
 
 	// internals
-	monitor  *Monitor
-	scrubber *procutil.DataScrubber
+	monitor         *Monitor
+	profileManagers *SecurityProfileManagers
+	scrubber        *procutil.DataScrubber
 
 	// Ring
 	eventStream EventStream
@@ -265,8 +266,8 @@ func (p *Probe) Init() error {
 		return err
 	}
 
-	if p.monitor.activityDumpManager != nil {
-		p.monitor.activityDumpManager.AddActivityDumpHandler(p.activityDumpHandler)
+	if p.profileManagers.activityDumpManager != nil {
+		p.profileManagers.activityDumpManager.AddActivityDumpHandler(p.activityDumpHandler)
 	}
 
 	p.eventStream.SetMonitor(p.monitor.perfBufferMonitor)
@@ -287,7 +288,11 @@ func (p *Probe) Setup() error {
 
 	p.applyDefaultFilterPolicies()
 
-	return p.monitor.Start(p.ctx, &p.wg)
+	p.profileManagers.Start(p.ctx, &p.wg)
+
+	p.monitor.Start(p.ctx, &p.wg)
+
+	return nil
 }
 
 // Start processing events
@@ -347,7 +352,7 @@ func (p *Probe) handleAnomalyDetection(event *model.Event) bool {
 
 	// first, check if the current event is a kernel generated anomaly detection event
 	if profile.IsAnomalyDetectionEvent(event.GetEventType()) {
-		p.monitor.securityProfileManager.FillProfileContextFromContainerID(event.FieldHandlers.ResolveContainerID(event, &event.ContainerContext), &event.SecurityProfileContext)
+		p.profileManagers.securityProfileManager.FillProfileContextFromContainerID(event.FieldHandlers.ResolveContainerID(event, &event.ContainerContext), &event.SecurityProfileContext)
 		// check if the profile can generate anomalies for the current event type
 	} else if !event.SecurityProfileContext.CanGenerateAnomaliesFor(event.GetEventType()) {
 		return false
@@ -373,7 +378,7 @@ func (p *Probe) DispatchEvent(event *model.Event) {
 
 	// filter out event if already present on a profile
 	if p.Config.RuntimeSecurity.SecurityProfileEnabled {
-		p.monitor.securityProfileManager.LookupEventInProfiles(event)
+		p.profileManagers.securityProfileManager.LookupEventInProfiles(event)
 	}
 
 	// send wildcard first
@@ -388,8 +393,8 @@ func (p *Probe) DispatchEvent(event *model.Event) {
 	// handle anomaly detection, if not an anomaly let it pass to the process monitor so that it can be added to a dump
 	if !p.handleAnomalyDetection(event) && event.Error == nil {
 		// Process after evaluation because some monitors need the DentryResolver to have been called first.
-		if p.monitor.activityDumpManager != nil {
-			p.monitor.activityDumpManager.ProcessEvent(event)
+		if p.profileManagers.activityDumpManager != nil {
+			p.profileManagers.activityDumpManager.ProcessEvent(event)
 		}
 
 	}
@@ -556,7 +561,7 @@ func (p *Probe) handleEvent(CPU int, data []byte) {
 			return
 		}
 
-		p.monitor.activityDumpManager.HandleCgroupTracingEvent(&event.CgroupTracing)
+		p.profileManagers.activityDumpManager.HandleCgroupTracingEvent(&event.CgroupTracing)
 		return
 	case model.UnshareMountNsEventType:
 		if _, err = event.UnshareMountNS.UnmarshalBinary(data[offset:]); err != nil {
@@ -1046,7 +1051,7 @@ func getApproverType(approverTableName string) string {
 
 func (p *Probe) isNeededForActivityDump(eventType eval.EventType) bool {
 	if p.Config.RuntimeSecurity.ActivityDumpEnabled {
-		for _, e := range p.monitor.GetActivityDumpTracedEventTypes() {
+		for _, e := range p.profileManagers.GetActivityDumpTracedEventTypes() {
 			if e.String() == eventType {
 				return true
 			}
@@ -1093,7 +1098,7 @@ func (p *Probe) updateProbes(ruleEventTypes []eval.EventType) error {
 
 	// ActivityDumps
 	if p.Config.RuntimeSecurity.ActivityDumpEnabled {
-		for _, e := range p.monitor.GetActivityDumpTracedEventTypes() {
+		for _, e := range p.profileManagers.GetActivityDumpTracedEventTypes() {
 			if e == model.SyscallsEventType {
 				activatedProbes = append(activatedProbes, probes.SyscallMonitorSelectors...)
 				break
@@ -1639,6 +1644,11 @@ func NewProbe(config *config.Config, opts Opts) (*Probe, error) {
 	}
 
 	p.fieldHandlers = &FieldHandlers{resolvers: p.resolvers}
+
+	p.profileManagers, err = NewSecurityProfileManagers(p)
+	if err != nil {
+		return nil, err
+	}
 
 	// be sure to zero the probe event before everything else
 	p.zeroEvent()
