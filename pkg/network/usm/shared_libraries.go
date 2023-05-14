@@ -18,14 +18,10 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/DataDog/gopsutil/process"
 	"github.com/twmb/murmur3"
 	"golang.org/x/sys/unix"
 
-	ddebpf "github.com/DataDog/datadog-agent/pkg/ebpf"
 	"github.com/DataDog/datadog-agent/pkg/network/protocols/http"
-	"github.com/DataDog/datadog-agent/pkg/process/monitor"
-	"github.com/DataDog/datadog-agent/pkg/process/util"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
 )
 
@@ -35,7 +31,6 @@ func toLibPath(data []byte) http.LibPath {
 
 func toBytes(l *http.LibPath) []byte {
 	return l.Buf[:l.Len]
-
 }
 
 // pathIdentifier is the unique key (system wide) of a file based on dev/inode
@@ -93,17 +88,6 @@ type soRule struct {
 	unregisterCB func(id pathIdentifier) error
 }
 
-// soWatcher provides a way to tie callback functions to the lifecycle of shared libraries
-type soWatcher struct {
-	wg             sync.WaitGroup
-	done           chan struct{}
-	procRoot       string
-	rules          []soRule
-	loadEvents     *ddebpf.PerfHandler
-	processMonitor *monitor.ProcessMonitor
-	registry       *soRegistry
-}
-
 type pathIdentifierSet = map[pathIdentifier]struct{}
 
 type soRegistry struct {
@@ -113,22 +97,6 @@ type soRegistry struct {
 
 	// if we can't register a uprobe we don't try more than once
 	blocklistByID pathIdentifierSet
-}
-
-func newSOWatcher(perfHandler *ddebpf.PerfHandler, rules ...soRule) *soWatcher {
-	return &soWatcher{
-		wg:             sync.WaitGroup{},
-		done:           make(chan struct{}),
-		procRoot:       util.GetProcRoot(),
-		rules:          rules,
-		loadEvents:     perfHandler,
-		processMonitor: monitor.GetProcessMonitor(),
-		registry: &soRegistry{
-			byID:          make(map[pathIdentifier]*soRegistration),
-			byPID:         make(map[uint32]pathIdentifierSet),
-			blocklistByID: make(pathIdentifierSet),
-		},
-	}
 }
 
 type soRegistration struct {
@@ -157,117 +125,6 @@ func newRegistration(unregister func(pathIdentifier) error) *soRegistration {
 		unregisterCB:         unregister,
 		uniqueProcessesCount: 1,
 	}
-}
-
-func (w *soWatcher) Stop() {
-	close(w.done)
-	w.wg.Wait()
-}
-
-// Start consuming shared-library events
-func (w *soWatcher) Start() {
-	thisPID, err := util.GetRootNSPID()
-	if err != nil {
-		log.Warnf("soWatcher Start can't get root namespace pid %s", err)
-	}
-
-	_ = util.WithAllProcs(w.procRoot, func(pid int) error {
-		if pid == thisPID { // don't scan ourself
-			return nil
-		}
-
-		// report silently parsing /proc error as this could happen
-		// just exit processes
-		proc, err := process.NewProcess(int32(pid))
-		if err != nil {
-			log.Debugf("process %d parsing failed %s", pid, err)
-			return nil
-		}
-		mmaps, err := proc.MemoryMaps(true)
-		if err != nil {
-			log.Tracef("process %d maps parsing failed %s", pid, err)
-			return nil
-		}
-
-		root := fmt.Sprintf("%s/%d/root", w.procRoot, pid)
-		for _, m := range *mmaps {
-			for _, r := range w.rules {
-				if r.re.MatchString(m.Path) {
-					w.registry.register(root, m.Path, uint32(pid), r)
-					break
-				}
-			}
-		}
-
-		return nil
-	})
-
-	if err := w.processMonitor.Initialize(); err != nil {
-		log.Errorf("can't initialize process monitor %s", err)
-		return
-	}
-	cleanupExit, err := w.processMonitor.Subscribe(&monitor.ProcessCallback{
-		Event:    monitor.EXIT,
-		Metadata: monitor.ANY,
-		Callback: w.registry.unregister,
-	})
-	if err != nil {
-		log.Errorf("can't subscribe to process monitor exit event %s", err)
-		return
-	}
-
-	w.wg.Add(1)
-	go func() {
-		defer func() {
-			// Removing the registration of our hook.
-			cleanupExit()
-			// Stopping the process monitor (if we're the last instance)
-			w.processMonitor.Stop()
-			// cleaning up all active hooks.
-			w.registry.cleanup()
-			// marking we're finished.
-			w.wg.Done()
-		}()
-
-		for {
-			select {
-			case <-w.done:
-				return
-			case event, ok := <-w.loadEvents.DataChannel:
-				if !ok {
-					return
-				}
-
-				lib := toLibPath(event.Data)
-				if int(lib.Pid) == thisPID {
-					// don't scan ourself
-					event.Done()
-					continue
-				}
-
-				path := toBytes(&lib)
-				libPath := string(path)
-				procPid := fmt.Sprintf("%s/%d", w.procRoot, lib.Pid)
-				root := procPid + "/root"
-				// use cwd of the process as root if the path is relative
-				if libPath[0] != '/' {
-					root = procPid + "/cwd"
-					libPath = "/" + libPath
-				}
-
-				for _, r := range w.rules {
-					if r.re.Match(path) {
-						w.registry.register(root, libPath, lib.Pid, r)
-						break
-					}
-				}
-				event.Done()
-			case <-w.loadEvents.LostChannel:
-				// Nothing to do in this case
-				break
-			}
-		}
-	}()
 }
 
 // cleanup removes all registrations

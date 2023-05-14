@@ -10,11 +10,14 @@ package usm
 
 import (
 	"debug/elf"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 
 	manager "github.com/DataDog/ebpf-manager"
+	"github.com/DataDog/gopsutil/process"
 	"github.com/cilium/ebpf"
 
 	ddebpf "github.com/DataDog/datadog-agent/pkg/ebpf"
@@ -23,6 +26,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/network/go/bininspect"
 	"github.com/DataDog/datadog-agent/pkg/network/protocols/http"
 	errtelemetry "github.com/DataDog/datadog-agent/pkg/network/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/process/monitor"
+	"github.com/DataDog/datadog-agent/pkg/process/util"
 	"github.com/DataDog/datadog-agent/pkg/util/common"
 	"github.com/DataDog/datadog-agent/pkg/util/kernel"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
@@ -196,22 +201,27 @@ var gnuTLSProbes = []manager.ProbesSelector{
 const (
 	sslSockByCtxMap        = "ssl_sock_by_ctx"
 	sharedLibrariesPerfMap = "shared_libraries"
+	doSysOpen              = "do_sys_open"
+	doSysOpenAt2           = "do_sys_openat2"
 )
 
 // probe used for streaming shared library events
 var (
 	kprobeKretprobePrefix = []string{"kprobe", "kretprobe"}
-	doSysOpen             = "do_sys_open"
-	doSysOpenAt2          = "do_sys_openat2"
 )
 
 type sslProgram struct {
 	cfg                     *config.Config
 	sockFDMap               *ebpf.Map
 	perfHandler             *ddebpf.PerfHandler
-	watcher                 *soWatcher
 	manager                 *errtelemetry.Manager
 	sysOpenHooksIdentifiers []manager.ProbeIdentificationPair
+	eventLoopWaitGroup      sync.WaitGroup
+	eventLoopDoneChannel    chan struct{}
+	procRoot                string
+	soRules                 []soRule
+	processMonitor          *monitor.ProcessMonitor
+	soRegistry              *soRegistry
 }
 
 var _ subprogram = &sslProgram{}
@@ -226,6 +236,15 @@ func newSSLProgram(c *config.Config, sockFDMap *ebpf.Map) *sslProgram {
 		sockFDMap:               sockFDMap,
 		perfHandler:             ddebpf.NewPerfHandler(100),
 		sysOpenHooksIdentifiers: getSysOpenHooksIdentifiers(),
+		eventLoopWaitGroup:      sync.WaitGroup{},
+		eventLoopDoneChannel:    make(chan struct{}),
+		procRoot:                util.GetProcRoot(),
+		processMonitor:          monitor.GetProcessMonitor(),
+		soRegistry: &soRegistry{
+			byID:          make(map[pathIdentifier]*soRegistration),
+			byPID:         make(map[uint32]pathIdentifierSet),
+			blocklistByID: make(pathIdentifierSet),
+		},
 	}
 }
 
@@ -277,25 +296,126 @@ func (o *sslProgram) ConfigureOptions(options *manager.Options) {
 
 func (o *sslProgram) Start() {
 	// Setup shared library watcher and configure the appropriate callbacks
-	o.watcher = newSOWatcher(o.perfHandler,
-		soRule{
+	rules := []soRule{
+		{
 			re:           regexp.MustCompile(`libssl.so`),
 			registerCB:   addHooks(o.manager, openSSLProbes),
 			unregisterCB: removeHooks(o.manager, openSSLProbes),
 		},
-		soRule{
+		{
 			re:           regexp.MustCompile(`libcrypto.so`),
 			registerCB:   addHooks(o.manager, cryptoProbes),
 			unregisterCB: removeHooks(o.manager, cryptoProbes),
 		},
-		soRule{
+		{
 			re:           regexp.MustCompile(`libgnutls.so`),
 			registerCB:   addHooks(o.manager, gnuTLSProbes),
 			unregisterCB: removeHooks(o.manager, gnuTLSProbes),
 		},
-	)
+	}
 
-	o.watcher.Start()
+	thisPID, err := util.GetRootNSPID()
+	if err != nil {
+		log.Warnf("soWatcher Start can't get root namespace pid %s", err)
+	}
+
+	_ = util.WithAllProcs(o.procRoot, func(pid int) error {
+		if pid == thisPID { // don't scan ourself
+			return nil
+		}
+
+		// report silently parsing /proc error as this could happen
+		// just exit processes
+		proc, err := process.NewProcess(int32(pid))
+		if err != nil {
+			log.Debugf("process %d parsing failed %s", pid, err)
+			return nil
+		}
+		mmaps, err := proc.MemoryMaps(true)
+		if err != nil {
+			log.Tracef("process %d maps parsing failed %s", pid, err)
+			return nil
+		}
+
+		root := fmt.Sprintf("%s/%d/root", o.procRoot, pid)
+		for _, m := range *mmaps {
+			for _, r := range rules {
+				if r.re.MatchString(m.Path) {
+					o.soRegistry.register(root, m.Path, uint32(pid), r)
+					break
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err := o.processMonitor.Initialize(); err != nil {
+		log.Errorf("can't initialize process monitor %s", err)
+		return
+	}
+	cleanupExit, err := o.processMonitor.Subscribe(&monitor.ProcessCallback{
+		Event:    monitor.EXIT,
+		Metadata: monitor.ANY,
+		Callback: o.soRegistry.unregister,
+	})
+	if err != nil {
+		log.Errorf("can't subscribe to process monitor exit event %s", err)
+		return
+	}
+
+	o.eventLoopWaitGroup.Add(1)
+	go func() {
+		defer func() {
+			// Removing the registration of our hook.
+			cleanupExit()
+			// Stopping the process monitor (if we're the last instance)
+			o.processMonitor.Stop()
+			// cleaning up all active hooks.
+			o.soRegistry.cleanup()
+			// marking we're finished.
+			o.eventLoopWaitGroup.Done()
+		}()
+
+		for {
+			select {
+			case <-o.eventLoopDoneChannel:
+				return
+			case event, ok := <-o.perfHandler.DataChannel:
+				if !ok {
+					return
+				}
+
+				lib := toLibPath(event.Data)
+				if int(lib.Pid) == thisPID {
+					// don't scan ourself
+					event.Done()
+					continue
+				}
+
+				path := toBytes(&lib)
+				libPath := string(path)
+				procPid := fmt.Sprintf("%s/%d", o.procRoot, lib.Pid)
+				root := procPid + "/root"
+				// use cwd of the process as root if the path is relative
+				if libPath[0] != '/' {
+					root = procPid + "/cwd"
+					libPath = "/" + libPath
+				}
+
+				for _, r := range rules {
+					if r.re.Match(path) {
+						o.soRegistry.register(root, libPath, lib.Pid, r)
+						break
+					}
+				}
+				event.Done()
+			case <-o.perfHandler.LostChannel:
+				// Nothing to do in this case
+				break
+			}
+		}
+	}()
 }
 
 func (o *sslProgram) Stop() {
@@ -311,7 +431,8 @@ func (o *sslProgram) Stop() {
 	}
 	// We must stop the watcher first, as we can read from the perfHandler, before terminating the perfHandler, otherwise
 	// we might try to send events over the perfHandler.
-	o.watcher.Stop()
+	close(o.eventLoopDoneChannel)
+	o.eventLoopWaitGroup.Wait()
 	o.perfHandler.Stop()
 }
 
