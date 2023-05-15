@@ -12,6 +12,7 @@ import (
 	"context"
 
 	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/apiserver"
+	"github.com/DataDog/datadog-agent/pkg/util/log"
 	crd "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,6 +143,7 @@ func (f *crdFactory) ListWatch(customResourceClient interface{}, ns string, fiel
 func wrapCustomResourceDefinition(f func(*v1.CustomResourceDefinition) *metric.Family) func(interface{}) *metric.Family {
 	return func(obj interface{}) *metric.Family {
 		crd := obj.(*crd.CustomResourceDefinition)
+		log.Debugf("CustomResourceDefinition: %#v", crd)
 
 		metricFamily := f(crd)
 

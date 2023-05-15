@@ -134,6 +134,8 @@ func (a *countObjectsAggregator) accumulate(metric ksmstore.DDMetric) {
 	}
 
 	a.accumulator[labelValues]++
+	log.Debugf("%#v", a)
+	log.Debugf("%#v", metric)
 }
 
 func (a *lastCronJobCompleteAggregator) accumulate(metric ksmstore.DDMetric) {
