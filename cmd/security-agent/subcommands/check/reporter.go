@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DataDog/datadog-agent/cmd/security-agent/command"
 	"github.com/DataDog/datadog-agent/comp/core/config"
 	"github.com/DataDog/datadog-agent/comp/core/log"
 	"github.com/DataDog/datadog-agent/pkg/compliance/event"
 	"github.com/DataDog/datadog-agent/pkg/compliance/utils"
+	"github.com/DataDog/datadog-agent/pkg/security/common"
 	pkglog "github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/datadog-agent/pkg/util/startstop"
 )
@@ -33,7 +33,7 @@ func NewCheckReporter(log log.Component, config config.Component, stopper starts
 	r := &RunCheckReporter{}
 
 	if report {
-		endpoints, dstContext, err := command.NewLogContextCompliance()
+		endpoints, dstContext, err := common.NewLogContextCompliance()
 		if err != nil {
 			return nil, err
 		}
