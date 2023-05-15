@@ -33,7 +33,7 @@ func NewCheckReporter(log log.Component, config config.Component, stopper starts
 	r := &RunCheckReporter{}
 
 	if report {
-		endpoints, dstContext, err := command.NewLogContextCompliance(log)
+		endpoints, dstContext, err := command.NewLogContextCompliance()
 		if err != nil {
 			return nil, err
 		}
