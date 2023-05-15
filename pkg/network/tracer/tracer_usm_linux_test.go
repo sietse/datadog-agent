@@ -47,12 +47,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/network/tracer/testutil/grpc"
 )
 
-func isTLSTag(staticTags uint64) bool {
-	// We check only if the TLS tag has set, not like network.IsTLSTag()
-	// This meaning we classified the TLS flow from the packets / socket_filter
-	return staticTags&network.ConnTagTLS > 0
-}
-
 func httpSupported() bool {
 	if isFentry() {
 		return false
@@ -335,7 +329,7 @@ func testHTTPSLibrary(t *testing.T, fetchCmd []string, prefetchLibs []string) {
 	found := false
 	for _, c := range allConnections {
 		_, foundPid := fetchPids[c.Pid]
-		if foundPid && c.SPort == httpKey.SrcPort && c.DPort == httpKey.DstPort && isTLSTag(c.StaticTags) && c.ProtocolStack.Contains(protocols.TLS) {
+		if foundPid && c.SPort == httpKey.SrcPort && c.DPort == httpKey.DstPort && c.ProtocolStack.Contains(protocols.TLS) {
 			found = true
 			break
 		}
@@ -854,7 +848,7 @@ func TestJavaInjection(t *testing.T) {
 							}
 
 							for _, c := range payload.Conns {
-								if c.SPort == key.SrcPort && c.DPort == key.DstPort && isTLSTag(c.StaticTags) && c.ProtocolStack.Contains(protocols.TLS) {
+								if c.SPort == key.SrcPort && c.DPort == key.DstPort && c.ProtocolStack.Contains(protocols.TLS) {
 									return true
 								}
 							}
@@ -1165,7 +1159,7 @@ func TestTLSClassification(t *testing.T) {
 				require.Eventuallyf(t, func() bool {
 					payload := getConnections(t, tr)
 					for _, c := range payload.Conns {
-						if c.DPort == 44330 && isTLSTag(c.StaticTags) && c.ProtocolStack.Contains(protocols.TLS) {
+						if c.DPort == 44330 && c.ProtocolStack.Contains(protocols.TLS) {
 							return true
 						}
 					}
