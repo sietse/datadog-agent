@@ -4,7 +4,6 @@
   tags: ["runner:docker"]
   rules:
     !reference [ .on_system_probe_changes_or_manual ]
-  stage: kernel_matrix_testing
   script:
     # DockerHub login for build to limit rate limit when pulling base images
     - DOCKER_REGISTRY_LOGIN=$(aws ssm get-parameter --region us-east-1 --name ci.datadog-agent.$DOCKER_REGISTRY_LOGIN_SSM_KEY --with-decryption --query "Parameter.Value" --out text)
@@ -21,11 +20,13 @@
 
 pull_test_dockers_x64:
   extends: .pull_test_dockers
+  stage: kernel_matrix_testing
   variables:
     ARCH: amd64
 
 pull_test_dockers_arm64:
   extends: .pull_test_dockers
+  stage: functional_test
   variables:
     ARCH: arm64
 
