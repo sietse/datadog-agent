@@ -37,12 +37,44 @@
   - $S3_CP_CMD $S3_ARTIFACTS_URI/minimized-btfs-${ARCH}.tar.xz /tmp/minimized-btfs.tar.xz
   - cp /tmp/minimized-btfs.tar.xz $DD_AGENT_TESTING_DIR/site-cookbooks/dd-system-probe-check/files/minimized-btfs.tar.xz
 
+.pull_test_dockers_ft:
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/docker_x64$DATADOG_AGENT_BUILDIMAGES_SUFFIX:$DATADOG_AGENT_BUILDIMAGES
+  needs: []
+  tags: ["runner:docker"]
+  stage: functional_test
+  rules:
+    !reference [ .on_system_probe_changes_or_manual ]
+  script:
+    # DockerHub login for build to limit rate limit when pulling base images
+    - DOCKER_REGISTRY_LOGIN=$(aws ssm get-parameter --region us-east-1 --name ci.datadog-agent.$DOCKER_REGISTRY_LOGIN_SSM_KEY --with-decryption --query "Parameter.Value" --out text)
+    - aws ssm get-parameter --region us-east-1 --name ci.datadog-agent.$DOCKER_REGISTRY_PWD_SSM_KEY --with-decryption --query "Parameter.Value" --out text | docker login --username "$DOCKER_REGISTRY_LOGIN" --password-stdin "$DOCKER_REGISTRY_URL"
+    # Pull base images
+    - mkdir $KITCHEN_DOCKERS
+    - inv -e system-probe.save-test-dockers --output-dir $KITCHEN_DOCKERS --arch $ARCH
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - $KITCHEN_DOCKERS
+  variables:
+    KITCHEN_DOCKERS: $DD_AGENT_TESTING_DIR/kitchen-dockers-$ARCH
+
+pull_test_dockers_ft_x64:
+  extends: .pull_test_dockers_ft
+  variables:
+    ARCH: amd64
+
+pull_test_dockers_ft_arm64:
+  extends: .pull_test_dockers_ft
+  variables:
+    ARCH: arm64
+
+
 kitchen_test_system_probe_linux_x64_ec2:
   extends:
     - .kitchen_test_system_probe
     - .kitchen_ec2_location_us_east_1
     - .kitchen_ec2
-  needs: [ "tests_ebpf_x64", "prepare_ebpf_functional_tests_x64", "generate_minimized_btfs_x64", "pull_test_dockers_x64" ]
+  needs: [ "tests_ebpf_x64", "prepare_ebpf_functional_tests_x64", "generate_minimized_btfs_x64", "pull_test_dockers_ft_x64" ]
   variables:
     ARCH: amd64
     KITCHEN_ARCH: x86_64
@@ -76,7 +108,7 @@ kitchen_test_system_probe_linux_arm64:
     - .kitchen_test_system_probe
     - .kitchen_ec2_location_us_east_1
     - .kitchen_ec2_spot_instances
-  needs: [ "tests_ebpf_arm64", "prepare_ebpf_functional_tests_arm64", "generate_minimized_btfs_arm64", "pull_test_dockers_arm64" ]
+  needs: [ "tests_ebpf_arm64", "prepare_ebpf_functional_tests_arm64", "generate_minimized_btfs_arm64", "pull_test_dockers_ft_arm64" ]
   variables:
     ARCH: arm64
     KITCHEN_ARCH: arm64

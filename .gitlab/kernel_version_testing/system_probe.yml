@@ -2,6 +2,7 @@
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/datadog-agent-buildimages/docker_x64$DATADOG_AGENT_BUILDIMAGES_SUFFIX:$DATADOG_AGENT_BUILDIMAGES
   needs: []
   tags: ["runner:docker"]
+  stage: kernel_matrix_testing
   rules:
     !reference [ .on_system_probe_changes_or_manual ]
   script:
@@ -20,13 +21,11 @@
 
 pull_test_dockers_x64:
   extends: .pull_test_dockers
-  stage: kernel_matrix_testing
   variables:
     ARCH: amd64
 
 pull_test_dockers_arm64:
   extends: .pull_test_dockers
-  stage: functional_test
   variables:
     ARCH: arm64
 
